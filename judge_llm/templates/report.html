@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Judge LLM Evaluation Report</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d7ff2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101922",
+                        "sidebar-light": "#e9eef2",
+                        "sidebar-dark": "#182430",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-gray-800 dark:text-gray-200">
+<div class="flex h-screen flex-col">
+    <!-- Page Header -->
+    <header class="flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-background-light dark:bg-background-dark px-6 shadow-sm">
+        <div class="flex items-center gap-4">
+            <h1 class="text-xl font-bold">Judge LLM Evaluation Report</h1>
+        </div>
+        <div class="flex items-center gap-4 text-sm">
+            <span id="overall-status" class="font-bold"></span>
+            <span id="generated-at" class="text-gray-500 dark:text-gray-400"></span>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Left Sidebar - Execution List -->
+        <aside class="w-80 flex-shrink-0 bg-sidebar-light dark:bg-sidebar-dark p-4 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+            <!-- Dashboard Summary -->
+            <div class="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+                <h2 class="text-lg font-bold mb-3">Summary</h2>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Total Executions:</span>
+                        <span id="total-executions" class="font-semibold"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Success Rate:</span>
+                        <span id="success-rate" class="font-semibold"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Total Cost:</span>
+                        <span id="total-cost" class="font-semibold"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Total Time:</span>
+                        <span id="total-time" class="font-semibold"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Execution List -->
+            <div class="flex-1 overflow-y-auto">
+                <h2 class="px-3 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-2">Executions</h2>
+                <div id="execution-list" class="space-y-1"></div>
+            </div>
+        </aside>
+
+        <!-- Main Panel - Execution Details -->
+        <main class="flex flex-1 flex-col bg-background-light dark:bg-background-dark overflow-hidden">
+            <div id="main-content" class="flex-1 overflow-y-auto p-6">
+                <div class="text-center text-gray-500 dark:text-gray-400 py-20">
+                    <p class="text-lg">Select an execution from the left to view details</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    // Embedded report data
+    const reportData = {{ report_data }};
+
+    // Initialize the report
+    function initializeReport() {
+        // Set overall status
+        const overallStatus = document.getElementById('overall-status');
+        if (reportData.overall_success) {
+            overallStatus.textContent = '✓ PASSED';
+            overallStatus.className = 'font-bold text-green-600';
+        } else {
+            overallStatus.textContent = '✗ FAILED';
+            overallStatus.className = 'font-bold text-red-600';
+        }
+
+        // Set generated at
+        document.getElementById('generated-at').textContent =
+            `Generated: ${new Date(reportData.generated_at).toLocaleString()}`;
+
+        // Set summary
+        document.getElementById('total-executions').textContent = reportData.execution_runs.length;
+        document.getElementById('success-rate').textContent =
+            `${(reportData.success_rate * 100).toFixed(1)}%`;
+        document.getElementById('total-cost').textContent =
+            `$${reportData.total_cost.toFixed(4)}`;
+        document.getElementById('total-time').textContent =
+            `${reportData.total_time.toFixed(2)}s`;
+
+        // Render execution list
+        renderExecutionList();
+    }
+
+    function renderExecutionList() {
+        const list = document.getElementById('execution-list');
+        list.innerHTML = '';
+
+        reportData.execution_runs.forEach((exec, index) => {
+            const item = document.createElement('div');
+            item.className = 'flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-200 dark:hover:bg-gray-700/50';
+            item.onclick = () => showExecutionDetails(index);
+
+            const statusBadge = exec.overall_success
+                ? '<span class="text-green-500">✓</span>'
+                : '<span class="text-red-500">✗</span>';
+
+            item.innerHTML = `
+                <div class="flex-1 overflow-hidden">
+                    <div class="flex justify-between items-center">
+                        <h3 class="truncate text-sm font-semibold">${exec.eval_case_id}</h3>
+                        ${statusBadge}
+                    </div>
+                    <p class="truncate text-xs text-gray-600 dark:text-gray-400">
+                        Run #${exec.run_number} | ${exec.provider_type}
+                    </p>
+                    <p class="truncate text-xs text-gray-500 dark:text-gray-500">
+                        ${exec.provider_result.time_taken.toFixed(2)}s | $${exec.provider_result.cost.toFixed(4)}
+                    </p>
+                </div>
+            `;
+
+            list.appendChild(item);
+        });
+    }
+
+    function showExecutionDetails(index) {
+        const exec = reportData.execution_runs[index];
+        const mainContent = document.getElementById('main-content');
+
+        // Build evaluator results HTML
+        let evaluatorHTML = '';
+        exec.evaluator_results.forEach(evalResult => {
+            const passedClass = evalResult.passed ? 'text-green-600' : 'text-red-600';
+            const passedIcon = evalResult.passed ? '✓' : '✗';
+
+            evaluatorHTML += `
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-semibold">${evalResult.evaluator_name}</h4>
+                        <span class="${passedClass} font-bold">${passedIcon} ${evalResult.passed ? 'PASSED' : 'FAILED'}</span>
+                    </div>
+                    ${evalResult.score !== null ? `
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            Score: <span class="font-semibold">${evalResult.score.toFixed(2)}</span>
+                            ${evalResult.threshold !== null ? ` / Threshold: ${evalResult.threshold}` : ''}
+                        </div>
+                    ` : ''}
+                    <div class="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                        <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto">${JSON.stringify(evalResult.details, null, 2)}</pre>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Build conversation HTML
+        let conversationHTML = '<div class="space-y-4">';
+        exec.provider_result.conversation_history.forEach((inv, idx) => {
+            const userText = inv.user_content.parts.map(p => p.text || '').join(' ');
+            const responseText = inv.final_response.parts.map(p => p.text || '').join(' ');
+
+            conversationHTML += `
+                <div class="border-l-4 border-primary pl-4">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">User:</div>
+                    <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded mb-2">${userText}</div>
+
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Response:</div>
+                    <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded">${responseText}</div>
+
+                    ${inv.intermediate_data.tool_uses.length > 0 ? `
+                        <div class="mt-2 text-xs">
+                            <span class="font-semibold">Tools Used:</span>
+                            ${inv.intermediate_data.tool_uses.map(t => t.name).join(', ')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        conversationHTML += '</div>';
+
+        mainContent.innerHTML = `
+            <div class="max-w-5xl mx-auto">
+                <!-- Header -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+                    <h2 class="text-2xl font-bold mb-4">Execution Details</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600 dark:text-gray-400">Execution ID:</span>
+                            <div class="font-semibold">${exec.execution_id}</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 dark:text-gray-400">Eval Case:</span>
+                            <div class="font-semibold">${exec.eval_case_id}</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 dark:text-gray-400">Provider:</span>
+                            <div class="font-semibold">${exec.provider_type}</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 dark:text-gray-400">Run Number:</span>
+                            <div class="font-semibold">${exec.run_number}</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 dark:text-gray-400">Time Taken:</span>
+                            <div class="font-semibold">${exec.provider_result.time_taken.toFixed(2)}s</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 dark:text-gray-400">Cost:</span>
+                            <div class="font-semibold">$${exec.provider_result.cost.toFixed(4)}</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 dark:text-gray-400">Total Tokens:</span>
+                            <div class="font-semibold">${exec.provider_result.token_usage.total_tokens || 0}</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 dark:text-gray-400">Status:</span>
+                            <div class="font-semibold ${exec.overall_success ? 'text-green-600' : 'text-red-600'}">
+                                ${exec.overall_success ? '✓ SUCCESS' : '✗ FAILED'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Evaluator Results -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+                    <h3 class="text-xl font-bold mb-4">Evaluator Results</h3>
+                    <div class="space-y-4">
+                        ${evaluatorHTML}
+                    </div>
+                </div>
+
+                <!-- Conversation -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h3 class="text-xl font-bold mb-4">Conversation</h3>
+                    ${conversationHTML}
+                </div>
+            </div>
+        `;
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', initializeReport);
+</script>
+</body>
+</html>
