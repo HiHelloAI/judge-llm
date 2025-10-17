@@ -159,7 +159,21 @@ def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> Eval
         is_valid, errors = validator.validate(config)
 
         if not is_valid:
-            error_msg = "Configuration validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
+            # Format nice validation summary
+            error_msg = "\n" + "="*80 + "\n"
+            error_msg += "  CONFIGURATION VALIDATION FAILED\n"
+            error_msg += "="*80 + "\n\n"
+            error_msg += f"Found {len(errors)} error(s) in your configuration:\n\n"
+
+            for idx, err in enumerate(errors, 1):
+                error_msg += f"{idx}. [{err.field}]\n"
+                error_msg += f"   ✗ Error: {err.message}\n"
+                error_msg += f"   ✓ Fix:   {err.fix_suggestion}\n\n"
+
+            error_msg += "="*80 + "\n"
+            error_msg += "Please fix the above issues and try again.\n"
+            error_msg += "="*80
+
             logger.error(error_msg)
             raise ValueError(error_msg)
 

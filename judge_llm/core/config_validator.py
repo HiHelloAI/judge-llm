@@ -2,8 +2,15 @@
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, NamedTuple
 from judge_llm.utils.logger import get_logger
+
+
+class ValidationError(NamedTuple):
+    """Structured validation error with helpful fix suggestion"""
+    field: str
+    message: str
+    fix_suggestion: str
 
 
 class ConfigValidator:
@@ -23,14 +30,14 @@ class ConfigValidator:
         self.logger = get_logger()
         self._initialized = True
 
-    def validate(self, config: Dict[str, Any]) -> tuple[bool, List[str]]:
+    def validate(self, config: Dict[str, Any]) -> tuple[bool, List[ValidationError]]:
         """Validate configuration
 
         Args:
             config: Configuration dictionary
 
         Returns:
-            Tuple of (is_valid, list_of_errors)
+            Tuple of (is_valid, list_of_validation_errors)
         """
         errors = []
 
@@ -54,136 +61,208 @@ class ConfigValidator:
         is_valid = len(errors) == 0
 
         if is_valid:
-            self.logger.info("Configuration validation passed")
+            self.logger.info("✓ Configuration validation passed")
         else:
-            self.logger.error(f"Configuration validation failed with {len(errors)} errors")
-            for error in errors:
-                self.logger.error(f"  - {error}")
+            self.logger.error(f"✗ Configuration validation failed with {len(errors)} error(s)")
 
         return is_valid, errors
 
-    def _validate_agent_config(self, agent_config: Dict[str, Any]) -> List[str]:
+    def _validate_agent_config(self, agent_config: Dict[str, Any]) -> List[ValidationError]:
         """Validate agent configuration"""
         errors = []
 
         # Validate num_runs
         num_runs = agent_config.get("num_runs", 1)
         if not isinstance(num_runs, int) or num_runs < 1:
-            errors.append(f"agent.num_runs must be a positive integer, got: {num_runs}")
+            errors.append(ValidationError(
+                field="agent.num_runs",
+                message=f"Must be a positive integer, got: {num_runs}",
+                fix_suggestion="Set 'num_runs: 1' or higher in the agent section"
+            ))
 
         # Validate parallel_execution
         parallel_execution = agent_config.get("parallel_execution", False)
         if not isinstance(parallel_execution, bool):
-            errors.append(
-                f"agent.parallel_execution must be a boolean, got: {parallel_execution}"
-            )
+            errors.append(ValidationError(
+                field="agent.parallel_execution",
+                message=f"Must be a boolean, got: {parallel_execution}",
+                fix_suggestion="Set 'parallel_execution: true' or 'parallel_execution: false'"
+            ))
 
         # Validate max_workers
         max_workers = agent_config.get("max_workers", 4)
         if not isinstance(max_workers, int) or max_workers < 1:
-            errors.append(f"agent.max_workers must be a positive integer, got: {max_workers}")
+            errors.append(ValidationError(
+                field="agent.max_workers",
+                message=f"Must be a positive integer, got: {max_workers}",
+                fix_suggestion="Set 'max_workers: 4' or another positive number"
+            ))
 
         # Validate log_level
         log_level = agent_config.get("log_level", "INFO")
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if log_level.upper() not in valid_levels:
-            errors.append(
-                f"agent.log_level must be one of {valid_levels}, got: {log_level}"
-            )
+            errors.append(ValidationError(
+                field="agent.log_level",
+                message=f"Must be one of {valid_levels}, got: {log_level}",
+                fix_suggestion=f"Set 'log_level: INFO' or choose from: {', '.join(valid_levels)}"
+            ))
 
         return errors
 
-    def _validate_dataset_config(self, dataset_config: Dict[str, Any]) -> List[str]:
+    def _validate_dataset_config(self, dataset_config: Dict[str, Any]) -> List[ValidationError]:
         """Validate dataset configuration"""
         errors = []
 
         if not dataset_config:
-            errors.append("dataset configuration is required")
+            errors.append(ValidationError(
+                field="dataset",
+                message="Dataset configuration is required",
+                fix_suggestion="Add a 'dataset:' section with 'loader' and 'paths' fields"
+            ))
             return errors
 
         # Validate loader type
         loader = dataset_config.get("loader")
         if not loader:
-            errors.append("dataset.loader is required")
+            errors.append(ValidationError(
+                field="dataset.loader",
+                message="Loader type is required",
+                fix_suggestion="Add 'loader: json' to your dataset configuration"
+            ))
 
         # Validate paths
         paths = dataset_config.get("paths", [])
         if not paths:
-            errors.append("dataset.paths is required and cannot be empty")
+            errors.append(ValidationError(
+                field="dataset.paths",
+                message="Paths list is required and cannot be empty",
+                fix_suggestion="Add 'paths: [\"path/to/dataset.json\"]' to your dataset configuration"
+            ))
         elif not isinstance(paths, list):
-            errors.append(f"dataset.paths must be a list, got: {type(paths)}")
+            errors.append(ValidationError(
+                field="dataset.paths",
+                message=f"Must be a list, got: {type(paths).__name__}",
+                fix_suggestion="Change paths to a list format, e.g., 'paths: [\"file1.json\", \"file2.json\"]'"
+            ))
         else:
-            for path in paths:
+            for idx, path in enumerate(paths):
                 if not isinstance(path, str):
-                    errors.append(f"dataset.paths must contain strings, got: {type(path)}")
+                    errors.append(ValidationError(
+                        field=f"dataset.paths[{idx}]",
+                        message=f"Must be a string, got: {type(path).__name__}",
+                        fix_suggestion=f"Ensure all paths are strings in quotes"
+                    ))
                     continue
 
                 # Check if path exists
                 path_obj = Path(path).expanduser().resolve()
                 if not path_obj.exists():
-                    errors.append(f"dataset path does not exist: {path}")
+                    errors.append(ValidationError(
+                        field=f"dataset.paths[{idx}]",
+                        message=f"File does not exist: {path}",
+                        fix_suggestion=f"Create the file '{path}' or update the path to an existing file"
+                    ))
 
         return errors
 
-    def _validate_providers_config(self, providers_config: List[Dict[str, Any]]) -> List[str]:
+    def _validate_providers_config(self, providers_config: List[Dict[str, Any]]) -> List[ValidationError]:
         """Validate providers configuration"""
         errors = []
 
         if not providers_config:
-            errors.append("At least one provider must be configured")
+            errors.append(ValidationError(
+                field="providers",
+                message="At least one provider must be configured",
+                fix_suggestion="Add a provider, e.g., '- type: gemini\\n  agent_id: your-agent-id'"
+            ))
             return errors
 
         if not isinstance(providers_config, list):
-            errors.append(f"providers must be a list, got: {type(providers_config)}")
+            errors.append(ValidationError(
+                field="providers",
+                message=f"Must be a list, got: {type(providers_config).__name__}",
+                fix_suggestion="Format providers as a YAML list using '- type: ...' syntax"
+            ))
             return errors
 
         for idx, provider in enumerate(providers_config):
             if not isinstance(provider, dict):
-                errors.append(f"providers[{idx}] must be a dictionary")
+                errors.append(ValidationError(
+                    field=f"providers[{idx}]",
+                    message="Must be a dictionary",
+                    fix_suggestion="Each provider should have fields like 'type' and 'agent_id'"
+                ))
                 continue
 
             # Validate provider type
             provider_type = provider.get("type")
             if not provider_type:
-                errors.append(f"providers[{idx}].type is required")
+                errors.append(ValidationError(
+                    field=f"providers[{idx}].type",
+                    message="Provider type is required",
+                    fix_suggestion="Add 'type: gemini' or another supported provider type"
+                ))
 
             # Validate agent_id
             agent_id = provider.get("agent_id")
             if not agent_id:
-                errors.append(f"providers[{idx}].agent_id is required")
+                errors.append(ValidationError(
+                    field=f"providers[{idx}].agent_id",
+                    message="Agent ID is required",
+                    fix_suggestion="Add 'agent_id: your-agent-identifier' to the provider configuration"
+                ))
 
             # Validate agent_config_path
             agent_config_path = provider.get("agent_config_path")
             if agent_config_path:
                 path_obj = Path(agent_config_path).expanduser().resolve()
                 if not path_obj.exists():
-                    errors.append(
-                        f"providers[{idx}].agent_config_path does not exist: {agent_config_path}"
-                    )
+                    errors.append(ValidationError(
+                        field=f"providers[{idx}].agent_config_path",
+                        message=f"File does not exist: {agent_config_path}",
+                        fix_suggestion=f"Create the config file '{agent_config_path}' or update the path"
+                    ))
 
         return errors
 
-    def _validate_evaluators_config(self, evaluators_config: List[Dict[str, Any]]) -> List[str]:
+    def _validate_evaluators_config(self, evaluators_config: List[Dict[str, Any]]) -> List[ValidationError]:
         """Validate evaluators configuration"""
         errors = []
 
         if not evaluators_config:
-            errors.append("At least one evaluator must be configured")
+            errors.append(ValidationError(
+                field="evaluators",
+                message="At least one evaluator must be configured",
+                fix_suggestion="Add an evaluator, e.g., '- type: llm_grader\\n  name: response_quality'"
+            ))
             return errors
 
         if not isinstance(evaluators_config, list):
-            errors.append(f"evaluators must be a list, got: {type(evaluators_config)}")
+            errors.append(ValidationError(
+                field="evaluators",
+                message=f"Must be a list, got: {type(evaluators_config).__name__}",
+                fix_suggestion="Format evaluators as a YAML list using '- type: ...' syntax"
+            ))
             return errors
 
         for idx, evaluator in enumerate(evaluators_config):
             if not isinstance(evaluator, dict):
-                errors.append(f"evaluators[{idx}] must be a dictionary")
+                errors.append(ValidationError(
+                    field=f"evaluators[{idx}]",
+                    message="Must be a dictionary",
+                    fix_suggestion="Each evaluator should have fields like 'type' and 'name'"
+                ))
                 continue
 
             # Validate evaluator type
             evaluator_type = evaluator.get("type")
             if not evaluator_type:
-                errors.append(f"evaluators[{idx}].type is required")
+                errors.append(ValidationError(
+                    field=f"evaluators[{idx}].type",
+                    message="Evaluator type is required",
+                    fix_suggestion="Add 'type: llm_grader', 'type: exact_match', or 'type: custom'"
+                ))
                 continue
 
             # For custom evaluators, validate module_path or module
@@ -192,30 +271,39 @@ class ConfigValidator:
                 module = evaluator.get("module")
 
                 if not module_path and not module:
-                    errors.append(
-                        f"evaluators[{idx}]: custom evaluator requires either "
-                        "module_path or module"
-                    )
+                    errors.append(ValidationError(
+                        field=f"evaluators[{idx}]",
+                        message="Custom evaluator requires either 'module_path' or 'module'",
+                        fix_suggestion="Add 'module_path: path/to/evaluator.py' or 'module: your_module'"
+                    ))
 
                 if module_path:
                     path_obj = Path(module_path).expanduser().resolve()
                     if not path_obj.exists():
-                        errors.append(
-                            f"evaluators[{idx}].module_path does not exist: {module_path}"
-                        )
+                        errors.append(ValidationError(
+                            field=f"evaluators[{idx}].module_path",
+                            message=f"File does not exist: {module_path}",
+                            fix_suggestion=f"Create '{module_path}' or update to the correct path"
+                        ))
                     elif not path_obj.suffix == ".py":
-                        errors.append(
-                            f"evaluators[{idx}].module_path must be a Python file: {module_path}"
-                        )
+                        errors.append(ValidationError(
+                            field=f"evaluators[{idx}].module_path",
+                            message=f"Must be a Python file (.py), got: {module_path}",
+                            fix_suggestion="Update the path to point to a .py file"
+                        ))
 
                 # Validate class_name
                 class_name = evaluator.get("class_name")
                 if not class_name:
-                    errors.append(f"evaluators[{idx}].class_name is required for custom evaluators")
+                    errors.append(ValidationError(
+                        field=f"evaluators[{idx}].class_name",
+                        message="class_name is required for custom evaluators",
+                        fix_suggestion="Add 'class_name: YourEvaluatorClass' to the custom evaluator"
+                    ))
 
         return errors
 
-    def _validate_reporters_config(self, reporters_config: List[Dict[str, Any]]) -> List[str]:
+    def _validate_reporters_config(self, reporters_config: List[Dict[str, Any]]) -> List[ValidationError]:
         """Validate reporters configuration"""
         errors = []
 
@@ -224,30 +312,41 @@ class ConfigValidator:
             return errors
 
         if not isinstance(reporters_config, list):
-            errors.append(f"reporters must be a list, got: {type(reporters_config)}")
+            errors.append(ValidationError(
+                field="reporters",
+                message=f"Must be a list, got: {type(reporters_config).__name__}",
+                fix_suggestion="Format reporters as a YAML list using '- type: ...' syntax"
+            ))
             return errors
 
         for idx, reporter in enumerate(reporters_config):
             if not isinstance(reporter, dict):
-                errors.append(f"reporters[{idx}] must be a dictionary")
+                errors.append(ValidationError(
+                    field=f"reporters[{idx}]",
+                    message="Must be a dictionary",
+                    fix_suggestion="Each reporter should have a 'type' field"
+                ))
                 continue
 
             # Validate reporter type
             reporter_type = reporter.get("type")
             if not reporter_type:
-                errors.append(f"reporters[{idx}].type is required")
+                errors.append(ValidationError(
+                    field=f"reporters[{idx}].type",
+                    message="Reporter type is required",
+                    fix_suggestion="Add 'type: console', 'type: html', or 'type: json'"
+                ))
 
-            # For file-based reporters, validate output_path directory exists
+            # For file-based reporters, validate output_path is provided
             if reporter_type in ["html", "json"]:
                 output_path = reporter.get("output_path")
                 if not output_path:
-                    errors.append(f"reporters[{idx}].output_path is required for {reporter_type} reporter")
-                else:
-                    output_dir = Path(output_path).parent
-                    if not output_dir.exists():
-                        errors.append(
-                            f"reporters[{idx}].output_path directory does not exist: {output_dir}"
-                        )
+                    errors.append(ValidationError(
+                        field=f"reporters[{idx}].output_path",
+                        message=f"output_path is required for {reporter_type} reporter",
+                        fix_suggestion=f"Add 'output_path: reports/report.{reporter_type}' to the reporter"
+                    ))
+                # Note: Directory will be created automatically by the reporter if it doesn't exist
 
         return errors
 
