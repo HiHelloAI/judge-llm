@@ -1,6 +1,6 @@
 """Response validator evaluator"""
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from judge_llm.core.models import EvalCase, ProviderResult, EvaluatorResult
 from judge_llm.evaluators.base import BaseEvaluator
 from judge_llm.utils.logger import get_logger
@@ -12,14 +12,13 @@ class ResponseValidator(BaseEvaluator):
     def __init__(self, config: Dict[str, Any] = None):
         super().__init__(config)
         self.logger = get_logger()
-        self.similarity_threshold = self.config.get("similarity_threshold", 0.8)
-        self.match_type = self.config.get("match_type", "exact")  # exact or semantic
 
     def evaluate(
         self,
         eval_case: EvalCase,
         agent_metadata: Dict[str, Any],
         provider_result: ProviderResult,
+        eval_config: Optional[Dict[str, Any]] = None,
     ) -> EvaluatorResult:
         """Evaluate response similarity
 
@@ -27,10 +26,16 @@ class ResponseValidator(BaseEvaluator):
             eval_case: Original evaluation case
             agent_metadata: Agent metadata
             provider_result: Provider execution result
+            eval_config: Per-test-case evaluator configuration
 
         Returns:
             EvaluatorResult with evaluation results
         """
+        # Merge config: per-test-case overrides instance config
+        config = self.get_config(eval_config)
+        similarity_threshold = config.get("similarity_threshold", 0.8)
+        match_type = config.get("match_type", "exact")  # exact or semantic
+
         self.logger.debug(f"ResponseValidator evaluating case: {eval_case.eval_id}")
 
         if not provider_result.success:
@@ -53,7 +58,7 @@ class ResponseValidator(BaseEvaluator):
                 evaluator_type=self.get_evaluator_type(),
                 success=True,
                 score=0.0,
-                threshold=self.similarity_threshold,
+                threshold=similarity_threshold,
                 passed=False,
                 details={
                     "mismatch": "conversation_length",
@@ -70,7 +75,7 @@ class ResponseValidator(BaseEvaluator):
             expected_text = self._extract_text(expected_inv.final_response.parts)
             actual_text = self._extract_text(actual_inv.final_response.parts)
 
-            if self.match_type == "exact":
+            if match_type == "exact":
                 score = 1.0 if expected_text == actual_text else 0.0
             else:
                 # Simple semantic similarity (can be enhanced with embeddings)
@@ -86,17 +91,18 @@ class ResponseValidator(BaseEvaluator):
             })
 
         avg_score = total_score / len(expected_conv) if expected_conv else 0.0
-        passed = avg_score >= self.similarity_threshold
+        passed = avg_score >= similarity_threshold
 
         return EvaluatorResult(
             evaluator_name=self.get_evaluator_name(),
             evaluator_type=self.get_evaluator_type(),
             success=True,
             score=avg_score,
-            threshold=self.similarity_threshold,
+            threshold=similarity_threshold,
             passed=passed,
             details={
-                "match_type": self.match_type,
+                "match_type": match_type,
+                "similarity_threshold": similarity_threshold,
                 "comparisons": comparisons,
                 "average_score": avg_score,
             },

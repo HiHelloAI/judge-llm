@@ -176,10 +176,12 @@ class GeminiProvider(BaseProvider):
 
         # Otherwise, get the last user message from conversation
         for invocation in reversed(eval_case.conversation):
-            if invocation.role == "user" and invocation.user_content:
-                # Extract text from Content/Part structure
+            if invocation.user_content:
+                # Check if user_content has role="user" or extract text regardless
                 if invocation.user_content.parts:
-                    return invocation.user_content.parts[0].text or ""
+                    text = invocation.user_content.parts[0].text
+                    if text:
+                        return text
 
         return "Please respond to the evaluation case."
 

@@ -22,6 +22,7 @@ class BaseEvaluator(ABC):
         eval_case: EvalCase,
         agent_metadata: Dict[str, Any],
         provider_result: ProviderResult,
+        eval_config: Optional[Dict[str, Any]] = None,
     ) -> EvaluatorResult:
         """Evaluate the provider result against expected data
 
@@ -29,11 +30,29 @@ class BaseEvaluator(ABC):
             eval_case: Original evaluation case with expected data
             agent_metadata: Agent metadata
             provider_result: Result from provider execution
+            eval_config: Per-test-case evaluator configuration (overrides constructor config)
 
         Returns:
             EvaluatorResult with success status, score, and details
         """
         pass
+
+    def get_config(self, eval_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Get merged configuration (per-test-case config overrides instance config)
+
+        Args:
+            eval_config: Per-test-case configuration
+
+        Returns:
+            Merged configuration dictionary
+        """
+        if eval_config is None:
+            return self.config.copy()
+
+        # Merge: per-test-case config takes precedence over instance config
+        merged = self.config.copy()
+        merged.update(eval_config)
+        return merged
 
     def get_evaluator_name(self) -> str:
         """Get evaluator name

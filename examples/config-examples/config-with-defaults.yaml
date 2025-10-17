@@ -1,0 +1,27 @@
+# Minimal Configuration Using Defaults
+# This config relies on .judge_llm.defaults.yaml for most settings
+
+# Only override agent settings if needed
+# agent:
+#   log_level: DEBUG  # Uncomment to override default INFO
+
+dataset:
+  loader: json
+  paths:
+    - sample.evalset.json
+
+providers:
+  - type: gemini
+    agent_id: news_agent
+    agent_config_path: agent_config.json
+
+# Evaluators - inherits default thresholds and config
+evaluators:
+  - type: llm_grader
+    name: response_quality
+    # threshold: 0.7 is inherited from defaults
+
+reporters:
+  - type: console
+  - type: html
+    output_path: reports/report.html

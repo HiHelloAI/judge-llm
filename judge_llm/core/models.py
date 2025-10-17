@@ -81,6 +81,7 @@ class EvalCase(BaseModel):
     conversation: List[Invocation]
     session_input: SessionInput
     creation_timestamp: float
+    evaluator_config: Optional[Dict[str, Any]] = Field(default_factory=dict)  # Per-test-case evaluator config
 
 
 class EvalSet(BaseModel):

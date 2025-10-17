@@ -495,10 +495,12 @@ def _execute_single_task(
     evaluator_results = []
     for evaluator in evaluators:
         try:
+            # Pass per-test-case evaluator config if available
             eval_result = evaluator.evaluate(
                 eval_case=eval_case,
                 agent_metadata=provider.agent_metadata,
                 provider_result=provider_result,
+                eval_config=eval_case.evaluator_config if hasattr(eval_case, 'evaluator_config') else None
             )
             evaluator_results.append(eval_result)
         except Exception as e:

@@ -1,6 +1,6 @@
 """Trajectory validator evaluator"""
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from judge_llm.core.models import EvalCase, ProviderResult, EvaluatorResult
 from judge_llm.evaluators.base import BaseEvaluator
 from judge_llm.utils.logger import get_logger
@@ -12,14 +12,13 @@ class TrajectoryValidator(BaseEvaluator):
     def __init__(self, config: Dict[str, Any] = None):
         super().__init__(config)
         self.logger = get_logger()
-        self.sequence_match_type = self.config.get("sequence_match_type", "exact")
-        self.allow_partial_match = self.config.get("allow_partial_match", False)
 
     def evaluate(
         self,
         eval_case: EvalCase,
         agent_metadata: Dict[str, Any],
         provider_result: ProviderResult,
+        eval_config: Optional[Dict[str, Any]] = None,
     ) -> EvaluatorResult:
         """Evaluate trajectory (tool uses and intermediate responses)
 
@@ -27,10 +26,16 @@ class TrajectoryValidator(BaseEvaluator):
             eval_case: Original evaluation case
             agent_metadata: Agent metadata
             provider_result: Provider execution result
+            eval_config: Per-test-case evaluator configuration
 
         Returns:
             EvaluatorResult with evaluation results
         """
+        # Merge config: per-test-case overrides instance config
+        config = self.get_config(eval_config)
+        sequence_match_type = config.get("sequence_match_type", "exact")
+        allow_partial_match = config.get("allow_partial_match", False)
+
         self.logger.debug(f"TrajectoryValidator evaluating case: {eval_case.eval_id}")
 
         if not provider_result.success:
@@ -69,7 +74,7 @@ class TrajectoryValidator(BaseEvaluator):
             expected_tools = expected_inv.intermediate_data.tool_uses
             actual_tools = actual_inv.intermediate_data.tool_uses
 
-            if self.sequence_match_type == "exact":
+            if sequence_match_type == "exact":
                 match = self._exact_match(expected_tools, actual_tools)
             else:
                 match = self._partial_match(expected_tools, actual_tools)
@@ -88,7 +93,7 @@ class TrajectoryValidator(BaseEvaluator):
             total_invocations += 1
 
         score = total_matches / total_invocations if total_invocations > 0 else 1.0
-        passed = score >= 1.0 if self.sequence_match_type == "exact" else score >= 0.5
+        passed = score >= 1.0 if sequence_match_type == "exact" else score >= 0.5
 
         return EvaluatorResult(
             evaluator_name=self.get_evaluator_name(),
@@ -97,7 +102,8 @@ class TrajectoryValidator(BaseEvaluator):
             score=score,
             passed=passed,
             details={
-                "sequence_match_type": self.sequence_match_type,
+                "sequence_match_type": sequence_match_type,
+                "allow_partial_match": allow_partial_match,
                 "tool_matches": tool_matches,
                 "match_rate": score,
             },
