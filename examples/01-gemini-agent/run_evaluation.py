@@ -7,10 +7,9 @@ This demonstrates using the Judge LLM Python API directly instead of CLI.
 
 import os
 import sys
-from pathlib import Path
+import dotenv
 
-# Make sure judge_llm is importable (if not installed)
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+dotenv.load_dotenv()
 
 from judge_llm import evaluate
 
@@ -19,9 +18,9 @@ def main():
     """Run Gemini provider evaluation"""
 
     # Check if API key is set
-    if not os.environ.get("GEMINI_API_KEY"):
-        print("Error: GEMINI_API_KEY environment variable not set")
-        print("Please set it with: export GEMINI_API_KEY='your-api-key'")
+    if not os.environ.get("GOOGLE_API_KEY"):
+        print("Error: GOOGLE_API_KEY environment variable not set")
+        print("Please set it with: export GOOGLE_API_KEY='your-api-key'")
         sys.exit(1)
 
     print("Starting Gemini evaluation...\n")
@@ -31,12 +30,35 @@ def main():
     result = evaluate(config="config.yaml")
 
     print(f"\n✓ Evaluation completed!")
-    print(f"  Total runs: {result.summary.total_runs}")
-    print(f"  Successful: {result.summary.successful_runs}")
-    print(f"  Failed: {result.summary.failed_runs}")
-    print(f"  Success rate: {result.summary.success_rate:.1%}")
-    print(f"  Total cost: ${result.summary.total_cost:.6f}")
-    print(f"  Average latency: {result.summary.average_latency:.2f}s")
+
+    # Debug: Check what's in the result
+    print(f"\n=== DEBUG INFO ===")
+    print(f"Result type: {type(result)}")
+    print(f"Result attributes: {[attr for attr in dir(result) if not attr.startswith('_')]}")
+
+    if result.execution_runs:
+        print(f"\nFirst ExecutionRun type: {type(result.execution_runs[0])}")
+        print(f"ExecutionRun attributes: {[attr for attr in dir(result.execution_runs[0]) if not attr.startswith('_')]}")
+        print(f"\nFirst run data: {result.execution_runs[0]}")
+
+    print(f"\nResult summary: {result.summary}")
+    print(f"Result total_cost: {result.total_cost}")
+    print(f"Result total_time: {result.total_time}")
+    print(f"Result success_rate: {result.success_rate}")
+    print(f"Result overall_success: {result.overall_success}")
+    print(f"=== END DEBUG ===\n")
+
+    # Use the attributes directly from result object
+    total_runs = len(result.execution_runs)
+    successful_runs = sum(1 for run in result.execution_runs if run.overall_success)
+    failed_runs = total_runs - successful_runs
+
+    print(f"  Total runs: {total_runs}")
+    print(f"  Successful: {successful_runs}")
+    print(f"  Failed: {failed_runs}")
+    print(f"  Success rate: {result.success_rate:.1%}")
+    print(f"  Total cost: ${result.total_cost:.6f}")
+    print(f"  Average latency: {result.total_time / total_runs if total_runs > 0 else 0:.2f}s")
     print(f"\n  Reports generated:")
     print(f"    - Console output (above)")
     print(f"    - JSON: gemini_report.json")
@@ -80,7 +102,7 @@ def main():
         ],
     )
 
-    print(f"Success rate: {result.summary.success_rate:.1%}")
+    print(f"Success rate: {result.summary['success_rate']:.1%}")
     """
 
 

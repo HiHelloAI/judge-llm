@@ -1,22 +1,30 @@
 """Custom sentiment evaluator example"""
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from judge_llm.evaluators.base import BaseEvaluator
 from judge_llm.core.models import EvalCase, ProviderResult, EvaluatorResult
 
 
 class SentimentEvaluator(BaseEvaluator):
-    """Evaluate sentiment of responses (simple example)"""
+    """Evaluate sentiment of responses (simple example)
+
+    This example shows how to:
+    - Use per-test-case configuration
+    - Merge global config with test-specific config
+    - Implement custom evaluation logic
+    """
 
     def __init__(self, config: Dict[str, Any] = None):
         super().__init__(config)
-        self.min_positive_sentiment = self.config.get("min_positive_sentiment", 0.5)
+        # Don't store config values as instance variables
+        # They will be retrieved per-evaluation to support per-test-case config
 
     def evaluate(
         self,
         eval_case: EvalCase,
         agent_metadata: Dict[str, Any],
         provider_result: ProviderResult,
+        eval_config: Optional[Dict[str, Any]] = None,
     ) -> EvaluatorResult:
         """Evaluate response sentiment
 
@@ -24,10 +32,19 @@ class SentimentEvaluator(BaseEvaluator):
             eval_case: Original evaluation case
             agent_metadata: Agent metadata
             provider_result: Provider execution result
+            eval_config: Per-test-case evaluator configuration (overrides global config)
 
         Returns:
             EvaluatorResult with sentiment analysis results
         """
+        # Merge config: per-test-case config overrides instance config
+        config = self.get_config(eval_config)
+
+        # Get configuration values from merged config
+        min_positive_sentiment = config.get("min_positive_sentiment", 0.5)
+        custom_positive_words = config.get("positive_words", None)
+        custom_negative_words = config.get("negative_words", None)
+
         if not provider_result.success:
             return EvaluatorResult(
                 evaluator_name=self.get_evaluator_name(),
@@ -39,8 +56,13 @@ class SentimentEvaluator(BaseEvaluator):
             )
 
         # Simple sentiment analysis (count positive/negative words)
-        positive_words = {"good", "great", "excellent", "happy", "wonderful", "amazing"}
-        negative_words = {"bad", "terrible", "awful", "sad", "horrible", "disappointing"}
+        # Use custom words if provided, otherwise use defaults
+        positive_words = custom_positive_words if custom_positive_words else {
+            "good", "great", "excellent", "happy", "wonderful", "amazing"
+        }
+        negative_words = custom_negative_words if custom_negative_words else {
+            "bad", "terrible", "awful", "sad", "horrible", "disappointing"
+        }
 
         total_positive = 0
         total_negative = 0
@@ -70,17 +92,18 @@ class SentimentEvaluator(BaseEvaluator):
         else:
             sentiment_score = total_positive / total_words
 
-        passed = sentiment_score >= self.min_positive_sentiment
+        passed = sentiment_score >= min_positive_sentiment
 
         return EvaluatorResult(
             evaluator_name=self.get_evaluator_name(),
             evaluator_type=self.get_evaluator_type(),
             success=True,
             score=sentiment_score,
-            threshold=self.min_positive_sentiment,
+            threshold=min_positive_sentiment,
             passed=passed,
             details={
                 "sentiment_score": sentiment_score,
+                "min_positive_sentiment": min_positive_sentiment,
                 "total_positive_words": total_positive,
                 "total_negative_words": total_negative,
                 "sentiments_per_invocation": sentiments,

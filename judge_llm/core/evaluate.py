@@ -259,7 +259,7 @@ def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> Eval
 
     # Initialize providers
     logger.debug("Initializing providers")
-    providers = _initialize_providers(providers_config)
+    providers = _initialize_providers(providers_config, agent_config)
     logger.debug(f"Initialized {len(providers)} provider(s)")
 
     # Initialize evaluators
@@ -323,10 +323,29 @@ def _load_datasets(dataset_config: Dict[str, Any]) -> List[EvalSet]:
     return eval_sets
 
 
-def _initialize_providers(providers_config: List[Dict[str, Any]]) -> List[BaseProvider]:
-    """Initialize providers from configuration"""
+def _initialize_providers(
+    providers_config: List[Dict[str, Any]],
+    agent_config: Dict[str, Any]
+) -> List[BaseProvider]:
+    """Initialize providers from configuration
+
+    Args:
+        providers_config: List of provider configurations
+        agent_config: Agent configuration containing metadata
+
+    Returns:
+        List of initialized providers
+    """
     registry = get_provider_registry()
     providers = []
+
+    # Extract agent metadata from agent config (exclude execution settings)
+    execution_keys = {"num_runs", "parallel_execution", "max_workers", "fail_on_threshold_violation", "validate_config", "log_level"}
+    agent_metadata = {
+        k: v
+        for k, v in agent_config.items()
+        if k not in execution_keys
+    }
 
     for provider_config in providers_config:
         provider_type = provider_config.get("type")
@@ -351,6 +370,7 @@ def _initialize_providers(providers_config: List[Dict[str, Any]]) -> List[BasePr
         provider = provider_class(
             agent_id=agent_id,
             agent_config_path=agent_config_path,
+            agent_metadata=agent_metadata,
             **provider_metadata,
         )
 

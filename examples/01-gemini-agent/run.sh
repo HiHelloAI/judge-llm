@@ -9,11 +9,11 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
 # Load environment variables from .env file if it exists
-if [ -f ".env" ]; then
+if [ -f "../../.env" ]; then
     echo "Loading environment variables from .env file..."
     # Export all variables from .env file
     set -a
-    source .env
+    source ../../.env
     set +a
     echo "✓ Environment variables loaded"
 else
