@@ -31,7 +31,7 @@ class HTMLReporter(BaseReporter):
         Args:
             report: EvaluationReport object
         """
-        self.logger.info(f"Generating HTML report at {self.output_path}")
+        self.logger.debug(f"Generating HTML report at {self.output_path}")
 
         try:
             # Convert report to dictionary
@@ -49,7 +49,7 @@ class HTMLReporter(BaseReporter):
             with open(self.output_path, 'w', encoding='utf-8') as f:
                 f.write(html_content)
 
-            self.logger.info(f"HTML report generated successfully at {self.output_path}")
+            self.logger.info(f"📄 HTML report saved: {self.output_path}")
 
         except Exception as e:
             self.logger.error(f"Error generating HTML report: {e}")

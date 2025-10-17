@@ -27,6 +27,61 @@ from judge_llm.reporters.html_reporter import HTMLReporter
 from judge_llm.utils.logger import get_logger, set_log_level
 
 
+def _print_configuration_summary(
+    agent_config: Dict[str, Any],
+    dataset_config: Dict[str, Any],
+    providers_config: List[Dict[str, Any]],
+    evaluators_config: List[Dict[str, Any]],
+    reporters_config: List[Dict[str, Any]],
+):
+    """Print a nice summary of the configuration in grid format - one row per agent"""
+    logger = get_logger()
+
+    # Prepare summary data
+    num_runs = agent_config.get('num_runs', 1)
+    parallel = "Yes" if agent_config.get('parallel_execution', False) else "No"
+    if agent_config.get('parallel_execution', False):
+        parallel += f" ({agent_config.get('max_workers', 4)})"
+
+    # Get dataset info
+    paths = dataset_config.get('paths', [])
+    datasets_str = ', '.join([p.split('/')[-1] for p in paths]) if paths else 'N/A'
+    if len(datasets_str) > 25:
+        datasets_str = datasets_str[:22] + "..."
+
+    # Get evaluators summary
+    evaluators_str = ', '.join([e.get('name', e.get('type', 'unknown'))[:15] for e in evaluators_config])
+    if len(evaluators_str) > 30:
+        evaluators_str = evaluators_str[:27] + "..."
+
+    # Get reporters summary
+    reporters_str = ', '.join([r.get('type', 'unknown') for r in reporters_config])
+    if len(reporters_str) > 20:
+        reporters_str = reporters_str[:17] + "..."
+
+    # Build grid
+    summary = "\n" + "="*140 + "\n"
+    summary += "  EVALUATION CONFIGURATION\n"
+    summary += "="*140 + "\n"
+
+    # Table header
+    summary += "┌" + "─"*138 + "┐\n"
+    summary += "│ Agent ID / Provider    │ Type    │ Runs │ Parallel │ Datasets             │ Evaluators                   │ Reporters           │\n"
+    summary += "├" + "─"*138 + "┤\n"
+
+    # One row per provider (agent)
+    for provider in providers_config:
+        agent_id = provider.get('agent_id', 'N/A')[:22]
+        provider_type = provider.get('type', 'unknown')[:7]
+
+        summary += f"│ {agent_id:<22} │ {provider_type:<7} │ {num_runs:^4} │ {parallel:<8} │ {datasets_str:<20} │ {evaluators_str:<28} │ {reporters_str:<19} │\n"
+
+    summary += "└" + "─"*138 + "┘\n"
+    summary += "="*140 + "\n\n"
+
+    logger.info(summary)
+
+
 def evaluate(
     config: Optional[Union[str, Dict[str, Any]]] = None,
     agent: Optional[Dict[str, Any]] = None,
@@ -188,23 +243,32 @@ def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> Eval
     log_level = agent_config.get("log_level", "INFO")
     set_log_level(log_level)
 
+    # Print configuration summary
+    _print_configuration_summary(
+        agent_config=agent_config,
+        dataset_config=dataset_config,
+        providers_config=providers_config,
+        evaluators_config=evaluators_config,
+        reporters_config=reporters_config
+    )
+
     # Load datasets
-    logger.info("Loading datasets")
+    logger.debug("Loading datasets")
     eval_sets = _load_datasets(dataset_config)
-    logger.info(f"Loaded {len(eval_sets)} eval set(s)")
+    logger.debug(f"Loaded {len(eval_sets)} eval set(s)")
 
     # Initialize providers
-    logger.info("Initializing providers")
+    logger.debug("Initializing providers")
     providers = _initialize_providers(providers_config)
-    logger.info(f"Initialized {len(providers)} provider(s)")
+    logger.debug(f"Initialized {len(providers)} provider(s)")
 
     # Initialize evaluators
-    logger.info("Initializing evaluators")
+    logger.debug("Initializing evaluators")
     evaluators = _initialize_evaluators(evaluators_config)
-    logger.info(f"Initialized {len(evaluators)} evaluator(s)")
+    logger.debug(f"Initialized {len(evaluators)} evaluator(s)")
 
     # Execute evaluations
-    logger.info("Executing evaluations")
+    logger.info("▶ Starting evaluation...")
     execution_runs = _execute_evaluations(
         eval_sets=eval_sets,
         providers=providers,
@@ -215,22 +279,22 @@ def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> Eval
     )
 
     # Generate report
-    logger.info("Generating evaluation report")
+    logger.debug("Generating evaluation report")
     report = _generate_report(execution_runs)
 
     # Generate reports via reporters
-    logger.info("Generating reports via reporters")
+    logger.debug("Generating reports via reporters")
     reporters = _initialize_reporters(reporters_config)
     for reporter in reporters:
         reporter.generate_report(report)
         reporter.cleanup()
 
     # Cleanup resources
-    logger.info("Cleaning up resources")
+    logger.debug("Cleaning up resources")
     for provider in providers:
         provider.cleanup()
 
-    logger.info("Evaluation completed")
+    logger.info("✓ Evaluation completed successfully")
 
     return report
 

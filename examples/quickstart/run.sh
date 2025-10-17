@@ -2,8 +2,28 @@
 
 # Quickstart example using CLI
 
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Change to the script directory
+cd "$SCRIPT_DIR"
+
+# Load environment variables from .env file if it exists
+if [ -f ".env" ]; then
+    echo "Loading environment variables from .env file..."
+    # Export all variables from .env file
+    set -a
+    source .env
+    set +a
+    echo "✓ Environment variables loaded"
+else
+    echo "⚠ No .env file found (optional)"
+fi
+
+echo ""
 echo "Running Judge LLM Quickstart Example via CLI"
 echo "=============================================="
+echo "Working directory: $(pwd)"
 echo ""
 
 # Option 1: Run from config file

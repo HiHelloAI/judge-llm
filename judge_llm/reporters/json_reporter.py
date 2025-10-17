@@ -25,7 +25,7 @@ class JSONReporter(BaseReporter):
         Args:
             report: EvaluationReport object
         """
-        self.logger.info(f"Generating JSON report at {self.output_path}")
+        self.logger.debug(f"Generating JSON report at {self.output_path}")
 
         try:
             # Convert report to dictionary
@@ -37,7 +37,7 @@ class JSONReporter(BaseReporter):
             with open(self.output_path, 'w', encoding='utf-8') as f:
                 json.dump(report_dict, f, indent=2, ensure_ascii=False)
 
-            self.logger.info(f"JSON report generated successfully at {self.output_path}")
+            self.logger.info(f"📊 JSON report saved: {self.output_path}")
 
         except Exception as e:
             self.logger.error(f"Error generating JSON report: {e}")
