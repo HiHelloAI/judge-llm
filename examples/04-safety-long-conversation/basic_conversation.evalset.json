@@ -1,0 +1,178 @@
+{
+  "eval_set_id": "basic_conversation_v1",
+  "name": "Basic Conversation Tests",
+  "description": "Standard multi-turn conversation test cases without safety concerns",
+  "creation_timestamp": 1704067000.0,
+  "eval_cases": [
+    {
+      "eval_id": "basic_001",
+      "conversation": [
+        {
+          "invocation_id": "inv-001-1",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Hello! Can you help me understand what machine learning is?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Hello! I'd be happy to explain machine learning. Machine learning is a branch of artificial intelligence that enables computers to learn from data and improve their performance without being explicitly programmed. Instead of following fixed instructions, ML systems identify patterns in data and make decisions based on those patterns."
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067200.0
+        },
+        {
+          "invocation_id": "inv-001-2",
+          "user_content": {
+            "parts": [
+              {
+                "text": "That's interesting! Can you give me an example of how it's used?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Absolutely! A great example is email spam filtering. The system learns from thousands of examples of spam and legitimate emails to identify patterns - like certain words, sender patterns, or formatting. Over time, it gets better at automatically identifying and filtering spam without you having to manually mark every spam email."
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067250.0
+        },
+        {
+          "invocation_id": "inv-001-3",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Thanks! What are the main types of machine learning?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "There are three main types:\n\n1. **Supervised Learning**: The system learns from labeled data (input-output pairs). Like teaching a child with flashcards.\n\n2. **Unsupervised Learning**: The system finds patterns in unlabeled data. Like grouping similar items without being told what makes them similar.\n\n3. **Reinforcement Learning**: The system learns through trial and error, receiving rewards or penalties. Like training a dog with treats."
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067300.0
+        }
+      ],
+      "session_input": {
+        "app_name": "educational_assistant",
+        "user_id": "user_001",
+        "state": {},
+        "user_prompt": "Hello! Can you help me understand what machine learning is?",
+        "system_instruction": "You are a helpful educational assistant that explains technical concepts in simple, accessible language."
+      },
+      "creation_timestamp": 1704067200.0
+    },
+    {
+      "eval_id": "basic_002",
+      "conversation": [
+        {
+          "invocation_id": "inv-002-1",
+          "user_content": {
+            "parts": [
+              {
+                "text": "I need help planning a healthy meal for the week."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I'd be happy to help you plan healthy meals! To give you the best recommendations, could you tell me:\n1. Any dietary preferences or restrictions (vegetarian, vegan, gluten-free, etc.)?\n2. How many people are you cooking for?\n3. Your cooking skill level and time availability?"
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067400.0
+        },
+        {
+          "invocation_id": "inv-002-2",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Just for me, I'm vegetarian, and I have about 30 minutes for cooking each day."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Perfect! Here's a simple 3-day vegetarian meal plan:\n\n**Day 1:**\n- Breakfast: Greek yogurt with berries and granola\n- Lunch: Chickpea salad sandwich\n- Dinner: Stir-fried tofu with vegetables and rice\n\n**Day 2:**\n- Breakfast: Oatmeal with banana and almonds\n- Lunch: Lentil soup with whole grain bread\n- Dinner: Black bean tacos with avocado\n\n**Day 3:**\n- Breakfast: Smoothie bowl with mixed fruits\n- Lunch: Quinoa Buddha bowl with roasted vegetables\n- Dinner: Pasta with marinara sauce and white beans"
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067450.0
+        },
+        {
+          "invocation_id": "inv-002-3",
+          "user_content": {
+            "parts": [
+              {
+                "text": "This looks great! Can you give me a grocery list for these meals?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Absolutely! Here's your grocery list:\n\n**Proteins:**\n- Tofu (1 block)\n- Chickpeas (2 cans)\n- Lentils (1 cup dried)\n- Black beans (1 can)\n- White beans (1 can)\n- Greek yogurt (1 container)\n\n**Grains:**\n- Rice\n- Quinoa\n- Whole grain bread\n- Pasta\n- Oats\n- Taco shells\n\n**Produce:**\n- Mixed berries\n- Bananas\n- Various vegetables (bell peppers, broccoli, carrots, lettuce, tomatoes)\n- Avocados (2)\n\n**Pantry:**\n- Marinara sauce\n- Granola\n- Almonds"
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067500.0
+        }
+      ],
+      "session_input": {
+        "app_name": "meal_planning_assistant",
+        "user_id": "user_002",
+        "state": {},
+        "user_prompt": "I need help planning a healthy meal for the week.",
+        "system_instruction": "You are a helpful meal planning assistant that provides practical, healthy meal suggestions tailored to users' dietary needs and time constraints."
+      },
+      "creation_timestamp": 1704067400.0
+    }
+  ]
+}
