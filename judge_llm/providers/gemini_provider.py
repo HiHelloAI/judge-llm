@@ -69,19 +69,22 @@ class GeminiProvider(BaseProvider):
         """
         Execute the evaluation case using Gemini API.
 
+        For multi-turn conversations, this will execute each invocation sequentially,
+        building up the conversation history progressively.
+
         Args:
             eval_case: The evaluation case to execute
 
         Returns:
             ProviderResult with conversation history, cost, time, and metadata
         """
-        self.logger.info(f"GeminiProvider executing eval case: {eval_case.eval_id}")
+        self.logger.info(
+            f"GeminiProvider executing eval case: {eval_case.eval_id} "
+            f"with {len(eval_case.conversation)} turns"
+        )
         start_time = time.time()
 
         try:
-            # Get the user prompt from the eval case
-            user_prompt = self._extract_user_prompt(eval_case)
-
             # Build system instruction if available
             system_instruction = None
             if eval_case.session_input.system_instruction:
@@ -97,54 +100,102 @@ class GeminiProvider(BaseProvider):
                 **self.extra_params
             )
 
-            # Call Gemini API
-            response = self.client.models.generate_content(
+            # Execute all turns in the conversation sequentially using a chat session
+            # This ensures Gemini maintains context across all turns
+            conversation_history = []
+            total_cost = 0.0
+            total_token_usage = {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0
+            }
+
+            # Create a chat session to maintain conversation context
+            chat_session = self.client.chats.create(
                 model=self.model,
-                contents=user_prompt,
                 config=generation_config
             )
 
-            # Extract response text
-            response_text = response.text if hasattr(response, 'text') else str(response)
+            for turn_idx, invocation in enumerate(eval_case.conversation):
+                self.logger.debug(
+                    f"Executing turn {turn_idx + 1}/{len(eval_case.conversation)} "
+                    f"for eval_id {eval_case.eval_id}"
+                )
 
-            # Calculate metrics
+                # Extract user prompt from this invocation
+                user_prompt = self._extract_user_prompt_from_invocation(invocation)
+
+                if not user_prompt:
+                    self.logger.warning(
+                        f"No user prompt found for turn {turn_idx + 1}, skipping"
+                    )
+                    continue
+
+                # Send message in chat session - this maintains conversation history
+                response = chat_session.send_message(user_prompt)
+
+                # Extract response text
+                response_text = response.text if hasattr(response, 'text') else str(response)
+
+                # Extract token usage for this turn
+                turn_token_usage = {}
+                if hasattr(response, 'usage_metadata'):
+                    usage = response.usage_metadata
+                    turn_token_usage = {
+                        "prompt_tokens": getattr(usage, 'prompt_token_count', 0),
+                        "completion_tokens": getattr(usage, 'candidates_token_count', 0),
+                        "total_tokens": getattr(usage, 'total_token_count', 0)
+                    }
+
+                    # Accumulate token usage
+                    total_token_usage["prompt_tokens"] += turn_token_usage["prompt_tokens"]
+                    total_token_usage["completion_tokens"] += turn_token_usage["completion_tokens"]
+                    total_token_usage["total_tokens"] += turn_token_usage["total_tokens"]
+
+                # Calculate cost for this turn
+                turn_cost = self._calculate_cost(turn_token_usage)
+                total_cost += turn_cost
+
+                # Create invocation with actual Gemini response
+                result_invocation = Invocation(
+                    invocation_id=invocation.invocation_id,
+                    user_content=invocation.user_content,
+                    final_response=Content(
+                        parts=[Part(text=response_text)],
+                        role=None
+                    ),
+                    intermediate_data=invocation.intermediate_data,
+                    creation_timestamp=invocation.creation_timestamp
+                )
+
+                conversation_history.append(result_invocation)
+
+                self.logger.debug(
+                    f"Turn {turn_idx + 1} completed: tokens={turn_token_usage.get('total_tokens', 0)}, "
+                    f"cost=${turn_cost:.6f}, context maintained"
+                )
+
+            # Calculate total metrics
             time_taken = time.time() - start_time
-
-            # Extract token usage (if available)
-            token_usage = {}
-            if hasattr(response, 'usage_metadata'):
-                usage = response.usage_metadata
-                token_usage = {
-                    "prompt_tokens": getattr(usage, 'prompt_token_count', 0),
-                    "completion_tokens": getattr(usage, 'candidates_token_count', 0),
-                    "total_tokens": getattr(usage, 'total_token_count', 0)
-                }
-
-            # Calculate cost (approximate pricing for Gemini)
-            cost = self._calculate_cost(token_usage)
-
-            # Build result conversation history matching the expected format
-            conversation_history = self._build_result_conversation(
-                eval_case, response_text
-            )
 
             result = ProviderResult(
                 conversation_history=conversation_history,
-                cost=cost,
+                cost=total_cost,
                 time_taken=time_taken,
-                token_usage=token_usage,
+                token_usage=total_token_usage,
                 metadata={
                     "provider": "gemini",
                     "agent_id": self.agent_id,
                     "model": self.model,
                     "eval_id": eval_case.eval_id,
+                    "num_turns": len(conversation_history),
                 },
                 success=True
             )
 
-            self.logger.debug(
-                f"GeminiProvider completed in {time_taken:.2f}s, "
-                f"cost: ${cost:.6f}, tokens: {token_usage.get('total_tokens', 0)}"
+            self.logger.info(
+                f"GeminiProvider completed {len(conversation_history)} turns in {time_taken:.2f}s, "
+                f"total cost: ${total_cost:.6f}, total tokens: {total_token_usage['total_tokens']}"
             )
 
             return result
@@ -168,8 +219,24 @@ class GeminiProvider(BaseProvider):
                 success=False
             )
 
+    def _extract_user_prompt_from_invocation(self, invocation: Invocation) -> str:
+        """Extract the user prompt from a single invocation.
+
+        Args:
+            invocation: The invocation to extract the user prompt from
+
+        Returns:
+            The user prompt text
+        """
+        if invocation.user_content and invocation.user_content.parts:
+            for part in invocation.user_content.parts:
+                if part.text:
+                    return part.text
+
+        return ""
+
     def _extract_user_prompt(self, eval_case: EvalCase) -> str:
-        """Extract the user prompt from eval case."""
+        """Extract the user prompt from eval case (deprecated, kept for backwards compatibility)."""
         # First, try to get from session_input.user_prompt
         if eval_case.session_input.user_prompt:
             return eval_case.session_input.user_prompt
