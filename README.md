@@ -79,9 +79,18 @@ from judge_llm import evaluate
 # Option 1: From config file
 report = evaluate(config="config.yaml")
 
-# Option 2: Programmatic configuration
+# Option 2: Programmatic configuration (mirrors config.yaml structure)
 report = evaluate(
-    dataset_path=["./data/eval.json"],
+    agent={
+        "log_level": "INFO",
+        "num_runs": 1,
+        "parallel_execution": True,
+        "max_workers": 4,
+    },
+    dataset={
+        "loader": "local_file",
+        "paths": ["./data/eval.json"]
+    },
     providers=[
         {
             "type": "mock",
@@ -92,12 +101,14 @@ report = evaluate(
     evaluators=[
         {
             "type": "response_validator",
+            "enabled": True,
             "config": {"similarity_threshold": 0.8},
         },
     ],
-    num_runs=1,
-    parallel_execution=True,
-    log_level="INFO",
+    reporters=[
+        {"type": "console"},
+        {"type": "html", "output_path": "./report.html"}
+    ]
 )
 
 print(f"Success rate: {report.success_rate:.1%}")

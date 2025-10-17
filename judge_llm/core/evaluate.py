@@ -30,69 +30,93 @@ from judge_llm.utils.logger import get_logger, set_log_level
 
 def evaluate(
     config: Optional[Union[str, Dict[str, Any]]] = None,
-    dataset_path: Optional[Union[str, List[str]]] = None,
-    loader: Optional[Union[BaseLoader, str]] = None,
-    providers: Optional[List[Union[BaseProvider, Dict[str, Any]]]] = None,
-    evaluators: Optional[List[Union[BaseEvaluator, Dict[str, Any]]]] = None,
-    agent_id: Optional[str] = None,
-    agent_config_path: Optional[str] = None,
-    agent_metadata: Optional[Dict[str, Any]] = None,
-    num_runs: int = 1,
-    parallel_execution: bool = False,
-    max_workers: int = 4,
-    reporters: Optional[List[Union[BaseReporter, Dict[str, Any]]]] = None,
-    log_level: str = "INFO",
+    agent: Optional[Dict[str, Any]] = None,
+    dataset: Optional[Dict[str, Any]] = None,
+    providers: Optional[List[Dict[str, Any]]] = None,
+    evaluators: Optional[List[Dict[str, Any]]] = None,
+    reporters: Optional[List[Dict[str, Any]]] = None,
     validate_config: bool = True,
-    **provider_metadata,
 ) -> EvaluationReport:
     """Main evaluation function
 
     Args:
-        config: Configuration file path or dictionary
-        dataset_path: Path(s) to dataset files
-        loader: Loader instance or type string
-        providers: List of provider instances or config dicts
-        evaluators: List of evaluator instances or config dicts
-        agent_id: Agent identifier
-        agent_config_path: Path to agent configuration
-        agent_metadata: Agent metadata dictionary
-        num_runs: Number of runs per eval case
-        parallel_execution: Enable parallel execution
-        max_workers: Maximum worker threads for parallel execution
-        reporters: List of reporter instances or config dicts
-        log_level: Logging level
-        validate_config: Validate configuration before execution
-        **provider_metadata: Additional provider metadata
+        config: Configuration file path or dictionary (YAML structure)
+        agent: Agent configuration dict:
+            {
+                "log_level": "INFO",
+                "num_runs": 1,
+                "parallel_execution": False,
+                "max_workers": 4,
+                "fail_on_threshold_violation": True,
+                "validate_config": True
+            }
+        dataset: Dataset configuration dict:
+            {
+                "loader": "local_file",
+                "paths": ["./data/eval.json"]
+            }
+        providers: List of provider configuration dicts:
+            [{
+                "type": "mock",
+                "agent_id": "my_agent",
+                "model": "mock-model-v1",
+                ... (any additional provider-specific config)
+            }]
+        evaluators: List of evaluator configuration dicts:
+            [{
+                "type": "response_validator",
+                "enabled": True,
+                "config": {"similarity_threshold": 0.8}
+            }]
+        reporters: List of reporter configuration dicts:
+            [{
+                "type": "console"
+            }, {
+                "type": "html",
+                "output_path": "./report.html"
+            }]
+        validate_config: Validate configuration before execution (default: True)
 
     Returns:
         EvaluationReport with all results
+
+    Examples:
+        # From config file
+        report = evaluate(config="config.yaml")
+
+        # Programmatic with dict structure
+        report = evaluate(
+            agent={"log_level": "INFO", "num_runs": 1},
+            dataset={"loader": "local_file", "paths": ["./data.json"]},
+            providers=[{"type": "mock", "agent_id": "test"}],
+            evaluators=[{"type": "response_validator", "config": {}}],
+            reporters=[{"type": "console"}]
+        )
     """
     logger = get_logger()
-    set_log_level(log_level)
 
-    logger.info("Starting Judge LLM evaluation")
-
-    # Load configuration if provided
+    # If config is provided, use it directly
     if config is not None:
         config_dict = _load_config(config)
-        return _evaluate_from_config(config_dict, validate_config)
+        # Set log level from config or use default
+        agent_config = config_dict.get("agent", {})
+        set_log_level(agent_config.get("log_level", "INFO"))
+    else:
+        # Build config from provided dicts
+        if agent is None:
+            agent = {}
 
-    # Build configuration from arguments
-    config_dict = _build_config_from_args(
-        dataset_path=dataset_path,
-        loader=loader,
-        providers=providers,
-        evaluators=evaluators,
-        agent_id=agent_id,
-        agent_config_path=agent_config_path,
-        agent_metadata=agent_metadata,
-        num_runs=num_runs,
-        parallel_execution=parallel_execution,
-        max_workers=max_workers,
-        reporters=reporters,
-        log_level=log_level,
-        provider_metadata=provider_metadata,
-    )
+        set_log_level(agent.get("log_level", "INFO"))
+
+        config_dict = {
+            "agent": agent,
+            "dataset": dataset or {},
+            "providers": providers or [],
+            "evaluators": evaluators or [],
+            "reporters": reporters or [{"type": "console"}],
+        }
+
+    logger.info("Starting Judge LLM evaluation")
 
     return _evaluate_from_config(config_dict, validate_config)
 
@@ -109,27 +133,6 @@ def _load_config(config: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
 
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
-
-
-def _build_config_from_args(**kwargs) -> Dict[str, Any]:
-    """Build configuration dictionary from function arguments"""
-    config = {
-        "agent": {
-            "log_level": kwargs.get("log_level", "INFO"),
-            "num_runs": kwargs.get("num_runs", 1),
-            "parallel_execution": kwargs.get("parallel_execution", False),
-            "max_workers": kwargs.get("max_workers", 4),
-        },
-        "dataset": {
-            "loader": kwargs.get("loader") or "local_file",
-            "paths": kwargs.get("dataset_path") or [],
-        },
-        "providers": kwargs.get("providers") or [],
-        "evaluators": kwargs.get("evaluators") or [],
-        "reporters": kwargs.get("reporters") or [],
-    }
-
-    return config
 
 
 def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> EvaluationReport:

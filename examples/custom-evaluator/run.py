@@ -29,7 +29,14 @@ if __name__ == "__main__":
     register_evaluator("sentiment", SentimentEvaluator)
 
     report = evaluate(
-        dataset_path=["./sample.evalset.json"],
+        agent={
+            "log_level": "INFO",
+            "num_runs": 1,
+        },
+        dataset={
+            "loader": "local_file",
+            "paths": ["./sample.evalset.json"]
+        },
         providers=[{"type": "mock", "agent_id": "news_agent"}],
         evaluators=[
             {
@@ -38,8 +45,7 @@ if __name__ == "__main__":
                 "config": {"min_positive_sentiment": 0.3},
             }
         ],
-        num_runs=1,
-        log_level="INFO",
+        reporters=[{"type": "console"}]
     )
 
     print(f"\nEvaluation completed!")

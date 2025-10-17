@@ -16,13 +16,20 @@ if __name__ == "__main__":
     print(f"Total cost: ${report.total_cost:.4f}")
     print(f"Total time: {report.total_time:.2f}s")
 
-    # Option 2: Run with direct arguments
+    # Option 2: Run with direct arguments (mimics config.yaml structure)
     # Uncomment to test
     """
     print("\n\nOption 2: Running with direct arguments...")
     report = evaluate(
-        dataset_path=["./sample.evalset.json"],
-        loader="local_file",
+        agent={
+            "log_level": "INFO",
+            "num_runs": 1,
+            "parallel_execution": False,
+        },
+        dataset={
+            "loader": "local_file",
+            "paths": ["./sample.evalset.json"]
+        },
         providers=[
             {
                 "type": "mock",
@@ -42,8 +49,9 @@ if __name__ == "__main__":
                 "config": {"sequence_match_type": "exact"},
             },
         ],
-        num_runs=1,
-        log_level="INFO",
+        reporters=[
+            {"type": "console"}
+        ]
     )
 
     print(f"\nEvaluation completed!")
