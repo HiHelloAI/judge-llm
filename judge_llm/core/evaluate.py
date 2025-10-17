@@ -1,10 +1,8 @@
 """Main evaluate function for Judge LLM framework"""
 
 import uuid
-import yaml
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from judge_llm.core.models import (
@@ -15,6 +13,7 @@ from judge_llm.core.models import (
     ProviderResult,
 )
 from judge_llm.core.config_validator import get_validator
+from judge_llm.core.config_loader import get_loader
 from judge_llm.core.registry import get_provider_registry, get_evaluator_registry
 from judge_llm.loaders.base import BaseLoader
 from judge_llm.loaders.local_file_loader import LocalFileLoader
@@ -36,6 +35,8 @@ def evaluate(
     evaluators: Optional[List[Dict[str, Any]]] = None,
     reporters: Optional[List[Dict[str, Any]]] = None,
     validate_config: bool = True,
+    use_defaults: bool = True,
+    defaults: Optional[str] = None,
 ) -> EvaluationReport:
     """Main evaluation function
 
@@ -76,13 +77,21 @@ def evaluate(
                 "output_path": "./report.html"
             }]
         validate_config: Validate configuration before execution (default: True)
+        use_defaults: Use default configuration if available (default: True)
+        defaults: Path to custom defaults file (optional)
 
     Returns:
         EvaluationReport with all results
 
     Examples:
-        # From config file
+        # From config file (uses defaults automatically)
         report = evaluate(config="config.yaml")
+
+        # From config file without defaults
+        report = evaluate(config="config.yaml", use_defaults=False)
+
+        # With custom defaults file
+        report = evaluate(config="config.yaml", defaults="./my-defaults.yaml")
 
         # Programmatic with dict structure
         report = evaluate(
@@ -95,9 +104,9 @@ def evaluate(
     """
     logger = get_logger()
 
-    # If config is provided, use it directly
+    # If config is provided, load it with defaults support
     if config is not None:
-        config_dict = _load_config(config)
+        config_dict = _load_config(config, use_defaults, defaults)
         # Set log level from config or use default
         agent_config = config_dict.get("agent", {})
         set_log_level(agent_config.get("log_level", "INFO"))
@@ -121,18 +130,23 @@ def evaluate(
     return _evaluate_from_config(config_dict, validate_config)
 
 
-def _load_config(config: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
-    """Load configuration from file or use provided dict"""
-    logger = get_logger()
+def _load_config(
+    config: Union[str, Dict[str, Any]],
+    use_defaults: bool = True,
+    defaults_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Load configuration from file or dict with optional defaults
 
-    if isinstance(config, dict):
-        return config
+    Args:
+        config: Configuration file path or dict
+        use_defaults: Whether to use default configuration
+        defaults_path: Path to custom defaults file
 
-    config_path = Path(config).expanduser().resolve()
-    logger.info(f"Loading configuration from {config_path}")
-
-    with open(config_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
+    Returns:
+        Configuration dictionary (merged with defaults if enabled)
+    """
+    loader = get_loader()
+    return loader.load(config, use_defaults=use_defaults, defaults_path=defaults_path)
 
 
 def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> EvaluationReport:

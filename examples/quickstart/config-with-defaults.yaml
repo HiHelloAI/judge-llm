@@ -1,0 +1,22 @@
+# Simplified configuration using defaults from .judge_llm.defaults.yaml
+# This demonstrates how much cleaner configs can be when using defaults
+
+# Specify defaults file location (relative to project root)
+defaults: ../../.judge_llm.defaults.yaml
+
+# Only specify what's unique to this test
+dataset:
+  loader: local_file
+  paths:
+    - ./sample.evalset.json
+
+# Override specific provider settings (merges with default provider)
+providers:
+  - agent_id: news_agent  # Override agent_id from default
+
+# Reporters: this will replace the default (console)
+# To append, we'd need to use a different approach or list all reporters
+reporters:
+  - type: console
+  - type: json
+    output_path: ./report.json

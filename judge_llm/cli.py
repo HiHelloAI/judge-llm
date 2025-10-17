@@ -72,6 +72,16 @@ def main():
     help="Disable configuration validation",
 )
 @click.option(
+    "--no-defaults",
+    is_flag=True,
+    help="Disable default configuration loading",
+)
+@click.option(
+    "--defaults",
+    type=click.Path(exists=True),
+    help="Path to custom defaults configuration file",
+)
+@click.option(
     "--report",
     "-r",
     type=click.Choice(["console", "json", "html"], case_sensitive=False),
@@ -95,6 +105,8 @@ def run(
     max_workers,
     log_level,
     no_validate,
+    no_defaults,
+    defaults,
     report,
     output,
 ):
@@ -106,7 +118,12 @@ def run(
         if config:
             # Run from config file
             logger.info(f"Running evaluation from config file: {config}")
-            evaluate(config=config, validate_config=not no_validate)
+            evaluate(
+                config=config,
+                validate_config=not no_validate,
+                use_defaults=not no_defaults,
+                defaults=defaults,
+            )
         else:
             # Run from CLI arguments
             if not dataset:
@@ -146,7 +163,12 @@ def run(
                 "reporters": [{"type": r, "output_path": output} for r in report],
             }
 
-            evaluate(config=cli_config, validate_config=not no_validate)
+            evaluate(
+                config=cli_config,
+                validate_config=not no_validate,
+                use_defaults=not no_defaults,
+                defaults=defaults,
+            )
 
         click.echo("\n✓ Evaluation completed successfully", err=False)
 

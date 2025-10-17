@@ -13,6 +13,7 @@ A lightweight, extensible Python framework for evaluating and comparing LLM prov
 - 🛠️ **Configuration Driven**: YAML config files or programmatic API
 - 📝 **Comprehensive Logging**: Configurable log levels for debugging
 - ✅ **Config Validation**: Pre-execution validation with clear error messages
+- 🎨 **Default Configurations**: Define common settings once, reuse across tests
 
 ## Installation
 
@@ -117,7 +118,48 @@ print(f"Total cost: ${report.total_cost:.4f}")
 
 ## Configuration
 
-### Example config.yaml
+### Using Default Configurations (Recommended)
+
+To avoid repeating common settings across tests, create a `.judge_llm.defaults.yaml` file:
+
+```yaml
+# .judge_llm.defaults.yaml (define once)
+agent:
+  log_level: INFO
+  num_runs: 1
+  parallel_execution: false
+
+providers:
+  - type: mock
+    model: mock-model-v1
+
+evaluators:
+  - type: response_validator
+    config: {similarity_threshold: 0.8}
+  - type: cost_evaluator
+    config: {max_cost_per_case: 0.10}
+
+reporters:
+  - type: console
+```
+
+Then your test configs become minimal:
+
+```yaml
+# config.yaml (minimal - only what's unique)
+defaults: ./.judge_llm.defaults.yaml  # Optional: specify defaults location
+
+dataset:
+  loader: local_file
+  paths: [./my-test.json]
+
+providers:
+  - agent_id: my_agent  # Overrides default
+```
+
+See [DEFAULTS.md](DEFAULTS.md) for detailed documentation.
+
+### Example config.yaml (Full)
 
 ```yaml
 agent:

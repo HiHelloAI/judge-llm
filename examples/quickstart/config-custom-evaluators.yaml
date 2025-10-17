@@ -1,0 +1,22 @@
+# Configuration demonstrating how to customize default evaluators
+
+# Specify defaults file location
+defaults: ../../.judge_llm.defaults.yaml
+
+dataset:
+  loader: local_file
+  paths:
+    - ./sample.evalset.json
+
+providers:
+  - agent_id: news_agent
+
+# Disable cost and latency evaluators, keep others from defaults
+evaluators:
+  - type: cost_evaluator
+    enabled: false  # Disable this default evaluator
+
+  - type: latency_evaluator
+    enabled: false  # Disable this default evaluator
+
+  # response_validator and trajectory_validator will still be used from defaults
