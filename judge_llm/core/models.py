@@ -68,6 +68,10 @@ class SessionInput(BaseModel):
     app_name: str
     user_id: str
     state: Dict[str, Any] = Field(default_factory=dict)
+    user_prompt: Optional[str] = None
+    system_instruction: Optional[str] = None
+
+    model_config = {"extra": "allow"}  # Allow additional fields
 
 
 class EvalCase(BaseModel):

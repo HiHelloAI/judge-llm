@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "judge-llm"
-version = "0.1.0"
+version = "1.0.0"
 description = "A lightweight LLM evaluation framework for comparing and testing AI providers"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -44,7 +44,7 @@ dev = [
 ]
 
 gemini = [
-    "google-generativeai>=0.3.0",
+    "google-genai>=0.1.0",
 ]
 
 openai = [
@@ -56,7 +56,7 @@ anthropic = [
 ]
 
 all = [
-    "google-generativeai>=0.3.0",
+    "google-genai>=0.1.0",
     "openai>=1.0.0",
     "anthropic>=0.7.0",
 ]

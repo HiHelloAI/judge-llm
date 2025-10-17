@@ -1,0 +1,65 @@
+# Gemini Provider Example Configuration
+#
+# This example demonstrates how to use the Gemini provider with Judge LLM.
+# Make sure to set your GEMINI_API_KEY environment variable:
+#   export GEMINI_API_KEY="your-api-key-here"
+
+agent:
+  name: gemini_news_agent
+  description: "News assistant using Google Gemini"
+  log_level: INFO
+  num_runs: 1
+  parallel_execution: false
+  max_workers: 1
+
+dataset:
+  loader: local_file
+  paths:
+    - ./sample.evalset.json
+
+providers:
+  - type: gemini
+    agent_id: gemini_news_agent
+    model: gemini-2.0-flash-exp
+    temperature: 0.7
+    max_tokens: 2048
+    top_p: 0.95
+    top_k: 40
+    # API key will be read from environment variable GEMINI_API_KEY
+    # Or you can specify it directly (not recommended for production):
+    # api_key: "your-api-key-here"
+
+evaluators:
+  - type: response_validator
+    enabled: true
+    config:
+      similarity_threshold: 0.7
+      match_type: semantic
+      case_sensitive: false
+
+  - type: trajectory_validator
+    enabled: true
+    config:
+      sequence_match_type: flexible
+      allow_extra_steps: true
+
+  - type: cost_evaluator
+    enabled: true
+    config:
+      max_cost_per_case: 0.10
+      currency: USD
+
+  - type: latency_evaluator
+    enabled: true
+    config:
+      max_latency_seconds: 30
+      warn_threshold_seconds: 10
+
+reporters:
+  - type: console
+
+  - type: json
+    output_path: ./gemini_report.json
+
+  - type: html
+    output_path: ./gemini_report.html

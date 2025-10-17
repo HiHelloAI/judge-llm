@@ -265,6 +265,7 @@ register_evaluator("my_custom", MyCustomEvaluator)
 See the `examples/` directory for complete examples:
 
 - **quickstart/**: Basic usage with console output
+- **gemini/**: Using Google Gemini provider for evaluation
 - **custom-evaluator/**: Creating and using custom evaluators
 - **html-report/**: Generating interactive HTML dashboards
 
@@ -274,6 +275,93 @@ Each example includes:
 - Python script
 - Shell script (for CLI)
 - README with detailed instructions
+
+## Providers
+
+Judge LLM supports multiple LLM providers out of the box. Each provider is automatically registered if its dependencies are installed.
+
+### Google Gemini
+
+**Installation:**
+```bash
+pip install judge-llm[gemini]
+```
+
+**Configuration:**
+```yaml
+providers:
+  - type: gemini
+    agent_id: gemini_agent
+    model: gemini-2.0-flash-exp  # or gemini-1.5-pro, gemini-1.5-flash
+    temperature: 0.7
+    max_tokens: 2048
+    top_p: 0.95
+    top_k: 40
+    # API key from GEMINI_API_KEY environment variable
+```
+
+**Environment Setup:**
+```bash
+export GEMINI_API_KEY="your-api-key-here"
+```
+
+**Available Models:**
+- `gemini-2.0-flash-exp` - Latest experimental flash model (fast, cost-effective)
+- `gemini-1.5-pro` - Most capable model for complex tasks
+- `gemini-1.5-flash` - Balanced speed and capability
+
+**Cost Tracking:**
+The Gemini provider automatically tracks token usage and calculates costs based on current pricing.
+
+**Example:**
+See [examples/gemini/](examples/gemini/) for a complete working example.
+
+### OpenAI (Coming Soon)
+
+**Installation:**
+```bash
+pip install judge-llm[openai]
+```
+
+### Claude/Anthropic (Coming Soon)
+
+**Installation:**
+```bash
+pip install judge-llm[anthropic]
+```
+
+### Mock Provider
+
+The mock provider is built-in and requires no additional dependencies. It's useful for testing and development:
+
+```yaml
+providers:
+  - type: mock
+    agent_id: test_agent
+    model: mock-model-v1
+```
+
+### Custom Providers
+
+You can create custom providers by inheriting from `BaseProvider`:
+
+```python
+from judge_llm.providers.base import BaseProvider
+from judge_llm.core.models import EvalCase, ProviderResult
+
+class MyCustomProvider(BaseProvider):
+    def execute(self, eval_case: EvalCase, agent_metadata: dict) -> ProviderResult:
+        # Your implementation here
+        pass
+
+    def cleanup(self):
+        # Cleanup resources
+        pass
+
+# Register your provider
+from judge_llm import register_provider
+register_provider("custom", MyCustomProvider)
+```
 
 ## Architecture
 

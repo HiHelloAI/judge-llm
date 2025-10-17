@@ -1,0 +1,261 @@
+"""
+Gemini Provider implementation using google-genai SDK.
+"""
+
+from typing import Any, Dict, Optional
+import os
+import time
+from google import genai
+from google.genai import types
+
+from judge_llm.providers.base import BaseProvider
+from judge_llm.core.models import EvalCase, ProviderResult, Invocation, Content, Part
+from judge_llm.utils.logger import get_logger
+
+
+class GeminiProvider(BaseProvider):
+    """
+    Gemini provider for LLM evaluation.
+
+    Provider Metadata:
+        - api_key: Gemini API key (optional, falls back to GOOGLE_API_KEY env var)
+        - model: Model name (default: gemini-2.0-flash-exp)
+        - temperature: Sampling temperature (default: 1.0)
+        - max_tokens: Maximum tokens to generate (default: 8192)
+        - top_p: Top-p sampling (default: 0.95)
+        - top_k: Top-k sampling (default: 40)
+        - Any additional kwargs passed to the generate_content call
+    """
+
+    def __init__(
+        self,
+        agent_id: str,
+        agent_config_path: Optional[str] = None,
+        agent_metadata: Optional[Dict[str, Any]] = None,
+        **provider_metadata,
+    ):
+        super().__init__(agent_id, agent_config_path, agent_metadata, **provider_metadata)
+        self.logger = get_logger()
+
+        # Get API key from provider_metadata or environment variable
+        self.api_key = provider_metadata.get("api_key") or os.environ.get("GOOGLE_API_KEY")
+        if not self.api_key:
+            raise ValueError(
+                "Gemini provider requires 'api_key' in provider config or GOOGLE_API_KEY environment variable"
+            )
+
+        # Model configuration from provider_metadata
+        self.model = provider_metadata.get("model", "gemini-2.0-flash-exp")
+        self.temperature = provider_metadata.get("temperature", 1.0)
+        self.max_tokens = provider_metadata.get("max_tokens", 8192)
+        self.top_p = provider_metadata.get("top_p", 0.95)
+        self.top_k = provider_metadata.get("top_k", 40)
+
+        # Store additional kwargs for flexibility
+        self.extra_params = {
+            k: v for k, v in provider_metadata.items()
+            if k not in ["api_key", "model", "temperature", "max_tokens", "top_p", "top_k"]
+        }
+
+        # Initialize client
+        try:
+            self.client = genai.Client(api_key=self.api_key)
+            self.logger.info(f"Initialized Gemini provider with model: {self.model}")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize Gemini client: {e}")
+            raise
+
+    def execute(self, eval_case: EvalCase) -> ProviderResult:
+        """
+        Execute the evaluation case using Gemini API.
+
+        Args:
+            eval_case: The evaluation case to execute
+
+        Returns:
+            ProviderResult with conversation history, cost, time, and metadata
+        """
+        self.logger.info(f"GeminiProvider executing eval case: {eval_case.eval_id}")
+        start_time = time.time()
+
+        try:
+            # Get the user prompt from the eval case
+            user_prompt = self._extract_user_prompt(eval_case)
+
+            # Build system instruction if available
+            system_instruction = None
+            if eval_case.session_input.system_instruction:
+                system_instruction = eval_case.session_input.system_instruction
+
+            # Prepare generation config
+            generation_config = types.GenerateContentConfig(
+                temperature=self.temperature,
+                top_p=self.top_p,
+                top_k=self.top_k,
+                max_output_tokens=self.max_tokens,
+                system_instruction=system_instruction,
+                **self.extra_params
+            )
+
+            # Call Gemini API
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=user_prompt,
+                config=generation_config
+            )
+
+            # Extract response text
+            response_text = response.text if hasattr(response, 'text') else str(response)
+
+            # Calculate metrics
+            time_taken = time.time() - start_time
+
+            # Extract token usage (if available)
+            token_usage = {}
+            if hasattr(response, 'usage_metadata'):
+                usage = response.usage_metadata
+                token_usage = {
+                    "prompt_tokens": getattr(usage, 'prompt_token_count', 0),
+                    "completion_tokens": getattr(usage, 'candidates_token_count', 0),
+                    "total_tokens": getattr(usage, 'total_token_count', 0)
+                }
+
+            # Calculate cost (approximate pricing for Gemini)
+            cost = self._calculate_cost(token_usage)
+
+            # Build result conversation history matching the expected format
+            conversation_history = self._build_result_conversation(
+                eval_case, response_text
+            )
+
+            result = ProviderResult(
+                conversation_history=conversation_history,
+                cost=cost,
+                time_taken=time_taken,
+                token_usage=token_usage,
+                metadata={
+                    "provider": "gemini",
+                    "agent_id": self.agent_id,
+                    "model": self.model,
+                    "eval_id": eval_case.eval_id,
+                },
+                success=True
+            )
+
+            self.logger.debug(
+                f"GeminiProvider completed in {time_taken:.2f}s, "
+                f"cost: ${cost:.6f}, tokens: {token_usage.get('total_tokens', 0)}"
+            )
+
+            return result
+
+        except Exception as e:
+            time_taken = time.time() - start_time
+            self.logger.error(f"Gemini API error for eval_id {eval_case.eval_id}: {e}")
+
+            return ProviderResult(
+                conversation_history=[],
+                cost=0.0,
+                time_taken=time_taken,
+                token_usage={},
+                metadata={
+                    "provider": "gemini",
+                    "agent_id": self.agent_id,
+                    "model": self.model,
+                    "eval_id": eval_case.eval_id,
+                    "error": str(e)
+                },
+                success=False
+            )
+
+    def _extract_user_prompt(self, eval_case: EvalCase) -> str:
+        """Extract the user prompt from eval case."""
+        # First, try to get from session_input.user_prompt
+        if eval_case.session_input.user_prompt:
+            return eval_case.session_input.user_prompt
+
+        # Otherwise, get the last user message from conversation
+        for invocation in reversed(eval_case.conversation):
+            if invocation.role == "user" and invocation.user_content:
+                # Extract text from Content/Part structure
+                if invocation.user_content.parts:
+                    return invocation.user_content.parts[0].text or ""
+
+        return "Please respond to the evaluation case."
+
+    def _build_result_conversation(
+        self, eval_case: EvalCase, response_text: str
+    ) -> list[Invocation]:
+        """
+        Build conversation history matching the expected format.
+
+        Returns a list with a single Invocation containing both user and model response.
+        """
+        import uuid
+
+        # Get user content from eval case
+        user_content = None
+        for invocation in eval_case.conversation:
+            if invocation.user_content:
+                user_content = invocation.user_content
+                break
+
+        # If no user content found in conversation, create from session_input
+        if not user_content and hasattr(eval_case.session_input, 'user_prompt'):
+            user_content = Content(
+                parts=[Part(text=eval_case.session_input.user_prompt)],
+                role="user"
+            )
+        elif not user_content:
+            # Fallback: create minimal user content
+            user_content = Content(
+                parts=[Part(text="")],
+                role="user"
+            )
+
+        # Create model response content
+        final_response = Content(
+            parts=[Part(text=response_text)],
+            role=None  # final_response typically has role=None
+        )
+
+        # Create invocation with both user and model content
+        invocation = Invocation(
+            invocation_id=f"gemini-{uuid.uuid4()}",
+            user_content=user_content,
+            final_response=final_response,
+            creation_timestamp=time.time()
+        )
+
+        return [invocation]
+
+    def _calculate_cost(self, token_usage: Dict[str, int]) -> float:
+        """
+        Calculate approximate cost based on Gemini pricing.
+
+        Gemini 2.0 Flash pricing (approximate):
+        - Input: $0.075 per 1M tokens
+        - Output: $0.30 per 1M tokens
+
+        Note: Update these rates based on actual Gemini pricing.
+        """
+        if not token_usage:
+            return 0.0
+
+        input_tokens = token_usage.get("prompt_tokens", 0)
+        output_tokens = token_usage.get("completion_tokens", 0)
+
+        # Pricing per million tokens
+        input_cost_per_million = 0.075
+        output_cost_per_million = 0.30
+
+        input_cost = (input_tokens / 1_000_000) * input_cost_per_million
+        output_cost = (output_tokens / 1_000_000) * output_cost_per_million
+
+        return input_cost + output_cost
+
+    def cleanup(self):
+        """Cleanup resources."""
+        self.logger.info("Cleaning up Gemini provider")
+        # Gemini client doesn't require explicit cleanup
+        pass
