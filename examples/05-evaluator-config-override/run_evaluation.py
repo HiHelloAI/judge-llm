@@ -18,6 +18,9 @@ Run this script:
 import os
 import sys
 from pathlib import Path
+import dotenv
+
+dotenv.load_dotenv()
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -102,7 +105,7 @@ def main():
                     # Extract config used from details if available
                     threshold = eval_result.details.get('threshold', 'N/A')
                     match_type = eval_result.details.get('match_type', 'N/A')
-                    logger.info(f"  ResponseEvaluator: {status} (score={score:.3f}, threshold={threshold}, type={match_type})")
+                    logger.info(f"  ResponseEvaluator: {status} (score={score:.3f}s, threshold={threshold}s, type={match_type}s)")
                 elif eval_result.evaluator_type == 'latency':
                     latency = eval_result.details.get('latency_seconds', 'N/A')
                     max_latency = eval_result.details.get('max_latency_seconds', 'N/A')

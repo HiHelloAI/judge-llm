@@ -31,5 +31,8 @@ evaluators:
 reporters:
   - type: console
 
+  - type: json
+    output_path: "../../reports/03-custom-evaluator/gemini_report.json"
+
   - type: html
     output_path: "../../reports/03-custom-evaluator/gemini_report.html"

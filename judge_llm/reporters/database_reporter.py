@@ -463,6 +463,21 @@ class DatabaseReporter(BaseReporter):
                 f"({total_runs} runs, {total_evaluations} evaluations, {total_invocations} invocations)"
             )
 
+            # Print helpful message on how to view the dashboard
+            print("\n" + "=" * 80)
+            print("📊 Results saved to database!")
+            print("=" * 80)
+            print(f"📁 Database: {self.db_path}")
+            print()
+            print("🌐 View results in dashboard:")
+            print(f"   judge-llm dashboard --db {self.db_path}")
+            print()
+            print("   Or:")
+            print(f"   python -m judge_llm.cli dashboard --db {self.db_path}")
+            print()
+            print("💡 The dashboard will open in your browser automatically")
+            print("=" * 80 + "\n")
+
         except Exception as e:
             if self.connection:
                 self.connection.rollback()

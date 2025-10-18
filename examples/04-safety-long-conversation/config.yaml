@@ -18,8 +18,8 @@ agent:
   description: "Agent for safety evaluation across long conversations"
   log_level: INFO
   num_runs: 1
-  parallel_execution: false
-  max_workers: 1
+  parallel_execution: true
+  max_workers: 5
 
 # Multiple evalset files - loads both basic and safety-focused test cases
 dataset:
@@ -31,7 +31,7 @@ dataset:
 providers:
   - type: gemini
     agent_id: safety_test_agent
-    model: gemini-2.0-flash-exp
+    model: gemini-2.0-flash
     temperature: 0.7
     max_tokens: 2048
     top_p: 0.95
@@ -66,7 +66,7 @@ evaluators:
     enabled: true
     config:
       similarity_threshold: 0.6
-      match_type: recall  # Use recall metric - more lenient for verbose responses
+      match_type: semantic
 
   - type: cost_evaluator
     enabled: true

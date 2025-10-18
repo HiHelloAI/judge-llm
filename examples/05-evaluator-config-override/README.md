@@ -17,8 +17,7 @@ Per-test settings **override** global settings, allowing fine-grained control ov
 05-evaluator-config-override/
 ├── config.yaml              # Global evaluator defaults
 ├── test_cases.evalset.json  # Test cases with per-test overrides
-├── run_evaluation.py        # Python script to run evaluation
-└── README.md                # This file
+└── README.md
 ```
 
 ## Global Configuration (config.yaml)
@@ -75,7 +74,7 @@ evaluators:
   "eval_id": "test_002_strict_exact_match",
   "conversation": [...],
   "evaluator_config": {
-    "ResponseEvaluator": {
+    "ResponseValidator": {
       "match_type": "exact",
       "similarity_threshold": 1.0,
       "case_sensitive": true,
@@ -102,7 +101,7 @@ evaluators:
   "eval_id": "test_003_lenient_creative",
   "conversation": [...],
   "evaluator_config": {
-    "ResponseEvaluator": {
+    "ResponseValidator": {
       "match_type": "recall",
       "similarity_threshold": 0.3
     }
@@ -126,7 +125,7 @@ evaluators:
   "eval_id": "test_004_high_precision_factual",
   "conversation": [...],
   "evaluator_config": {
-    "ResponseEvaluator": {
+    "ResponseValidator": {
       "match_type": "rouge",
       "similarity_threshold": 0.85
     }
@@ -153,7 +152,7 @@ evaluators:
       "max_latency_seconds": 5,
       "warn_threshold_seconds": 2
     },
-    "ResponseEvaluator": {
+    "ResponseValidator": {
       "match_type": "exact",
       "similarity_threshold": 1.0
     }
@@ -241,58 +240,28 @@ Merged result:
 
 ## Running the Example
 
-### Option 1: Using the Python Script (Recommended)
-
-```bash
-cd examples/05-evaluator-config-override
-python run_evaluation.py
-```
-
-The script provides detailed output showing:
-- Global defaults vs per-test overrides
-- Which configuration each test case uses
-- Evaluation results with config details
-- Report locations
-
-### Option 2: Using the CLI
-
 ```bash
 cd examples/05-evaluator-config-override
 python -m judge_llm.cli evaluate --config config.yaml
-```
-
-### Option 3: Programmatically from Python
-
-```python
-from judge_llm.core.evaluate import evaluate
-
-report = evaluate(
-    config="examples/05-evaluator-config-override/config.yaml",
-    validate_config=True,
-    use_defaults=True
-)
-
-print(f"Overall success: {report.overall_success}")
-print(f"Total test cases: {len(report.execution_runs)}")
 ```
 
 ## Expected Output
 
 ```
 test_001_uses_defaults:
-  ResponseEvaluator: threshold=0.6, match_type=semantic  (global defaults)
+  ResponseValidator: threshold=0.6, match_type=semantic  (global defaults)
 
 test_002_strict_exact_match:
-  ResponseEvaluator: threshold=1.0, match_type=exact  (overridden)
+  ResponseValidator: threshold=1.0, match_type=exact  (overridden)
 
 test_003_lenient_creative:
-  ResponseEvaluator: threshold=0.3, match_type=recall  (overridden)
+  ResponseValidator: threshold=0.3, match_type=recall  (overridden)
 
 test_004_high_precision_factual:
-  ResponseEvaluator: threshold=0.85, match_type=rouge  (overridden)
+  ResponseValidator: threshold=0.85, match_type=rouge  (overridden)
 
 test_005_fast_latency_required:
-  ResponseEvaluator: threshold=1.0, match_type=exact  (overridden)
+  ResponseValidator: threshold=1.0, match_type=exact  (overridden)
   LatencyEvaluator: max=5s  (overridden)
 
 test_006_expensive_operation_allowed:
