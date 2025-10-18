@@ -7,11 +7,9 @@ This demonstrates using the Judge LLM Python API directly instead of CLI.
 
 import os
 import sys
-import dotenv
-
-dotenv.load_dotenv()
-
 from judge_llm import evaluate
+
+# Note: .env file is automatically loaded by judge_llm
 
 
 def main():

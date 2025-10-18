@@ -2,11 +2,15 @@
 
 import click
 from pathlib import Path
+from dotenv import load_dotenv
 from judge_llm.core.evaluate import evaluate
 from judge_llm.core.config_validator import get_validator
 from judge_llm.core.registry import get_provider_registry, get_evaluator_registry
 from judge_llm.utils.logger import get_logger, set_log_level
 import yaml
+
+# Load environment variables from .env file if present
+load_dotenv()
 
 
 @click.group()

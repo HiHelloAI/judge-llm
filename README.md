@@ -1,19 +1,32 @@
-# Judge LLM
+<div align="center">
+  <img src="assets/icon.png" alt="Judge LLM" width="200"/>
 
-A lightweight, extensible Python framework for evaluating and comparing LLM providers.
+  # JUDGE LLM
+
+  A lightweight, extensible Python framework for **evaluating and comparing LLM providers**. Test your AI agents systematically with multi-turn conversations, cost tracking, and comprehensive reporting.
+
+  [Quick Start](#quick-start) • [Demo](#demo) • [Features](#features) • [Examples](#testing-examples) • [Reports](#reports--dashboard)
+</div>
+
+## Purpose
+
+JUDGE LLM helps you **evaluate AI agents and LLM providers** by running test cases against your models and measuring:
+- **Response quality** (exact matching, semantic similarity, ROUGE scores)
+- **Cost & latency** (token usage, execution time, budget compliance)
+- **Conversation flow** (tool uses, multi-turn interactions)
+- **Safety & custom metrics** (extensible evaluation logic)
+
+Perfect for regression testing, A/B testing providers, and ensuring production-grade quality.
 
 ## Features
 
-- 🚀 **Multiple LLM Providers**: Support for Gemini, OpenAI, Claude, and custom providers
-- 📊 **Built-in Evaluators**: Response validation, trajectory checking, cost and latency evaluation
-- 🔌 **Extensible**: Easy plugin system for custom evaluators and providers
-- 📈 **Multiple Report Formats**: Console, HTML dashboard, and JSON outputs
-- ⚡ **Parallel Execution**: Run evaluations concurrently for faster results
-- 🎯 **Threshold-Based**: Configure pass/fail thresholds for all metrics
-- 🛠️ **Configuration Driven**: YAML config files or programmatic API
-- 📝 **Comprehensive Logging**: Configurable log levels for debugging
-- ✅ **Config Validation**: Pre-execution validation with clear error messages
-- 🎨 **Default Configurations**: Define common settings once, reuse across tests
+- **Multiple Providers**: Gemini, Mock, and custom providers
+- **Built-in Evaluators**: Response similarity, trajectory validation, cost/latency checks
+- **Extensible**: Plugin system for custom evaluators and providers
+- **Rich Reports**: Console tables, interactive HTML dashboard, JSON exports, SQLite database
+- **Parallel Execution**: Run evaluations concurrently with configurable workers
+- **Config-Driven**: YAML configs with smart defaults or programmatic Python API
+- **Per-Test Overrides**: Fine-tune evaluator thresholds per test case
 
 ## Installation
 
@@ -34,485 +47,182 @@ pip install judge-llm
 ### With Optional Dependencies
 
 ```bash
-# Install with specific provider support
+# Install with Gemini provider support
 pip install judge-llm[gemini]
-pip install judge-llm[openai]
-pip install judge-llm[anthropic]
-
-# Install with all providers
-pip install judge-llm[all]
 
 # Install with dev dependencies
 pip install judge-llm[dev]
 ```
 
-## Quick Start
+### Setup Environment Variables
 
-### 1. CLI Usage
+JUDGE LLM automatically loads environment variables from a `.env` file:
 
 ```bash
-# Run from config file
-judge-llm run --config config.yaml
+# Copy the example file
+cp .env.example .env
 
-# Run with CLI arguments
-judge-llm run \
-  --dataset ./data/eval.json \
-  --provider mock \
-  --agent-id my_agent \
-  --num-runs 3 \
-  --parallel \
-  --report html \
-  --output ./report.html
-
-# Validate config
-judge-llm validate --config config.yaml
-
-# List available providers and evaluators
-judge-llm list providers
-judge-llm list evaluators
+# Edit .env and add your API keys
+nano .env
 ```
 
-### 2. Python API
+**`.env` file:**
+```bash
+# Google Gemini API Key
+GOOGLE_API_KEY=your-google-api-key-here
+```
+
+The `.env` file is automatically loaded when you import the library or run the CLI. **Never commit `.env` to version control** - it's already in `.gitignore`.
+
+## Quick Start
+
+### CLI Usage
+
+```bash
+# Run evaluation from config file
+judge-llm run --config config.yaml
+
+# Run with inline arguments
+judge-llm run --dataset ./data/eval.json --provider mock --agent-id my_agent --report html --output report.html
+
+# Validate configuration
+judge-llm validate --config config.yaml
+
+# List available components
+judge-llm list providers
+judge-llm list evaluators
+
+# Generate dashboard from database
+judge-llm dashboard --db results.db --output dashboard.html
+```
+
+### Python API
 
 ```python
 from judge_llm import evaluate
 
-# Option 1: From config file
+# From config file
 report = evaluate(config="config.yaml")
 
-# Option 2: Programmatic configuration (mirrors config.yaml structure)
+# Programmatic API
 report = evaluate(
-    agent={
-        "log_level": "INFO",
-        "num_runs": 1,
-        "parallel_execution": True,
-        "max_workers": 4,
-    },
-    dataset={
-        "loader": "local_file",
-        "paths": ["./data/eval.json"]
-    },
-    providers=[
-        {
-            "type": "mock",
-            "agent_id": "my_agent",
-            "model": "mock-model-v1",
-        }
-    ],
-    evaluators=[
-        {
-            "type": "response_evaluator",
-            "enabled": True,
-            "config": {"similarity_threshold": 0.8},
-        },
-    ],
-    reporters=[
-        {"type": "console"},
-        {"type": "html", "output_path": "./report.html"}
-    ]
+    dataset={"loader": "local_file", "paths": ["./data/eval.json"]},
+    providers=[{"type": "mock", "agent_id": "my_agent"}],
+    evaluators=[{"type": "response_evaluator", "config": {"similarity_threshold": 0.8}}],
+    reporters=[{"type": "console"}, {"type": "html", "output_path": "./report.html"}]
 )
 
-print(f"Success rate: {report.success_rate:.1%}")
-print(f"Total cost: ${report.total_cost:.4f}")
+print(f"Success: {report.success_rate:.1%} | Cost: ${report.total_cost:.4f}")
 ```
+
+## Demo
+
+<div align="center">
+  <img src="assets/judge-llm.gif" alt="Judge LLM Demo" width="100%"/>
+</div>
 
 ## Configuration
 
-### Using Default Configurations (Recommended)
-
-To avoid repeating common settings across tests, create a `.judge_llm.defaults.yaml` file:
-
+**Minimal config.yaml:**
 ```yaml
-# .judge_llm.defaults.yaml (define once)
-agent:
-  log_level: INFO
-  num_runs: 1
-  parallel_execution: false
-
-providers:
-  - type: mock
-    model: mock-model-v1
-
-evaluators:
-  - type: response_evaluator
-    config: {similarity_threshold: 0.8}
-  - type: cost_evaluator
-    config: {max_cost_per_case: 0.10}
-
-reporters:
-  - type: console
-```
-
-Then your test configs become minimal:
-
-```yaml
-# config.yaml (minimal - only what's unique)
-defaults: ./.judge_llm.defaults.yaml  # Optional: specify defaults location
-
 dataset:
   loader: local_file
-  paths: [./my-test.json]
-
-providers:
-  - agent_id: my_agent  # Overrides default
-```
-
-See [DEFAULTS.md](DEFAULTS.md) for detailed documentation.
-
-### Example config.yaml (Full)
-
-```yaml
-agent:
-  log_level: INFO
-  num_runs: 3
-  parallel_execution: true
-  max_workers: 4
-  fail_on_threshold_violation: true
-  validate_config: true  # Default, can set to false to skip
-
-dataset:
-  loader: local_file
-  paths:
-    - ./data/eval.json
+  paths: [./data/eval.json]
 
 providers:
   - type: gemini
     agent_id: my_agent
-    agent_config_path: ./agents/my_agent/
-    # Any additional config passed to provider
-    model: gemini-2.0-flash
-    temperature: 0.7
-    api_key: ${GEMINI_API_KEY}
+    model: gemini-2.0-flash-exp
 
 evaluators:
-  # Each evaluator has its own config
   - type: response_evaluator
-    enabled: true
-    config:
-      similarity_threshold: 0.8
-      match_type: exact
-
-  - type: trajectory_evaluator
-    enabled: true
-    config:
-      sequence_match_type: exact
-
-  - type: cost_evaluator
-    enabled: true
-    config:
-      max_cost_per_case: 0.10
-
-  - type: latency_evaluator
-    enabled: true
-    config:
-      max_latency_seconds: 30
-
-  # Custom evaluator
-  - type: custom
-    module_path: ./evaluators/my_evaluator.py
-    class_name: MyEvaluator
-    enabled: true
-    config:
-      custom_threshold: 0.7
+    config: {similarity_threshold: 0.8}
 
 reporters:
   - type: console
   - type: html
     output_path: ./report.html
-  - type: json
-    output_path: ./report.json
 ```
 
-## Creating Custom Evaluators
+See the [examples/](examples/) directory for complete configuration examples including default configs, custom evaluators, and advanced features.
 
-```python
-from judge_llm.evaluators.base import BaseEvaluator
-from judge_llm.core.models import EvalCase, ProviderResult, EvaluatorResult
+## Testing Examples
 
-class MyCustomEvaluator(BaseEvaluator):
-    def __init__(self, config=None):
-        super().__init__(config)
-        self.threshold = self.config.get("threshold", 0.5)
+Explore **6 complete examples** in the `examples/` directory:
 
-    def evaluate(self, eval_case, agent_metadata, provider_result):
-        # Your evaluation logic
-        score = self.calculate_score(provider_result)
+| Example | Description |
+|---------|-------------|
+| **01-gemini-agent** | Real Gemini API evaluation with response & trajectory checks |
+| **02-default-config** | Reusable config patterns with `.judge_llm.defaults.yaml` |
+| **03-custom-evaluator** | Build custom evaluators (sentiment analysis example) |
+| **04-safety-long-conversation** | Multi-turn safety evaluation (PII, toxicity, hate speech) |
+| **05-evaluator-config-override** | Per-test-case threshold overrides |
+| **06-database-reporter** | SQLite persistence for historical tracking & trend analysis |
 
-        return EvaluatorResult(
-            evaluator_name=self.get_evaluator_name(),
-            evaluator_type=self.get_evaluator_type(),
-            success=True,
-            score=score,
-            threshold=self.threshold,
-            passed=score >= self.threshold,
-            details={"info": "details here"},
-        )
-```
+Each example includes config files, datasets, and instructions. Run any example:
 
-### Register Custom Evaluator
-
-```python
-from judge_llm import register_evaluator
-from my_evaluators import MyCustomEvaluator
-
-register_evaluator("my_custom", MyCustomEvaluator)
-
-# Now use it in config or evaluate()
-```
-
-## Examples
-
-See the `examples/` directory for complete examples:
-
-- **quickstart/**: Basic usage with console output
-- **gemini/**: Using Google Gemini provider for evaluation
-- **custom-evaluator/**: Creating and using custom evaluators
-- **html-report/**: Generating interactive HTML dashboards
-
-Each example includes:
-- Configuration file
-- Sample dataset
-- Python script
-- Shell script (for CLI)
-- README with detailed instructions
-
-## Providers
-
-Judge LLM supports multiple LLM providers out of the box. Each provider is automatically registered if its dependencies are installed.
-
-### Google Gemini
-
-**Installation:**
 ```bash
-pip install judge-llm[gemini]
+cd examples/01-gemini-agent
+judge-llm run --config config.yaml
 ```
 
-**Configuration:**
-```yaml
-providers:
-  - type: gemini
-    agent_id: gemini_agent
-    model: gemini-2.0-flash-exp  # or gemini-1.5-pro, gemini-1.5-flash
-    temperature: 0.7
-    max_tokens: 2048
-    top_p: 0.95
-    top_k: 40
-    # API key from GEMINI_API_KEY environment variable
-```
+## Built-in Components
 
-**Environment Setup:**
+### Providers
+- **Gemini** - `pip install judge-llm[gemini]` (requires `GOOGLE_API_KEY` in `.env`)
+- **Mock** - Built-in, no setup required
+- **Custom** - Extend `BaseProvider` for your own LLM providers
+
+### Evaluators
+- **ResponseEvaluator** - Compare responses (exact, semantic similarity, ROUGE)
+- **TrajectoryEvaluator** - Validate tool uses and conversation flow
+- **CostEvaluator** - Enforce cost thresholds
+- **LatencyEvaluator** - Enforce latency thresholds
+- **Custom** - Extend `BaseEvaluator` for custom logic
+
+## Reports & Dashboard
+
+### HTML Dashboard
+Interactive web interface with:
+- **Sidebar**: Summary metrics + execution list with color-coded status
+- **Main Panel**: Execution details, evaluator scores, conversation history
+- **Features**: Dark mode, responsive, self-contained (works offline)
+
+### Console Output
+Rich formatted tables with live execution progress
+
+### JSON Export
+Machine-readable results for programmatic analysis
+
+### SQLite Database
+Persistent storage for:
+- Historical trend tracking
+- Regression detection
+- Cost analysis over time
+- SQL-based queries
+
 ```bash
-export GEMINI_API_KEY="your-api-key-here"
+# Generate dashboard from database
+judge-llm dashboard --db results.db --output dashboard.html
 ```
-
-**Available Models:**
-- `gemini-2.0-flash-exp` - Latest experimental flash model (fast, cost-effective)
-- `gemini-1.5-pro` - Most capable model for complex tasks
-- `gemini-1.5-flash` - Balanced speed and capability
-
-**Cost Tracking:**
-The Gemini provider automatically tracks token usage and calculates costs based on current pricing.
-
-**Example:**
-See [examples/gemini/](examples/gemini/) for a complete working example.
-
-### OpenAI (Coming Soon)
-
-**Installation:**
-```bash
-pip install judge-llm[openai]
-```
-
-### Claude/Anthropic (Coming Soon)
-
-**Installation:**
-```bash
-pip install judge-llm[anthropic]
-```
-
-### Mock Provider
-
-The mock provider is built-in and requires no additional dependencies. It's useful for testing and development:
-
-```yaml
-providers:
-  - type: mock
-    agent_id: test_agent
-    model: mock-model-v1
-```
-
-### Custom Providers
-
-You can create custom providers by inheriting from `BaseProvider`:
-
-```python
-from judge_llm.providers.base import BaseProvider
-from judge_llm.core.models import EvalCase, ProviderResult
-
-class MyCustomProvider(BaseProvider):
-    def execute(self, eval_case: EvalCase, agent_metadata: dict) -> ProviderResult:
-        # Your implementation here
-        pass
-
-    def cleanup(self):
-        # Cleanup resources
-        pass
-
-# Register your provider
-from judge_llm import register_provider
-register_provider("custom", MyCustomProvider)
-```
-
-## Architecture
-
-### Core Components
-
-1. **Loaders**: Load eval sets from files, directories, or custom sources
-2. **Providers**: Execute eval cases with LLM providers (Gemini, OpenAI, Claude, etc.)
-3. **Evaluators**: Compare expected vs actual results using various metrics
-4. **Reporters**: Generate reports in different formats (console, HTML, JSON)
-
-### Design Principles
-
-- **Interface-Driven**: All components implement abstract base classes
-- **Singleton Pattern**: Registries, logger, and validator use singletons for efficiency
-- **Pydantic Models**: Type-safe data structures throughout
-- **Resource Efficient**: Connection pooling, lazy loading, streaming I/O
-- **Extensible**: Plugin architecture for custom components
-
-## Dataset Format
-
-Judge LLM uses evaluation sets in JSON format:
-
-```json
-{
-  "eval_set_id": "my_eval_set",
-  "name": "My Eval Set",
-  "eval_cases": [
-    {
-      "eval_id": "case_1",
-      "conversation": [
-        {
-          "invocation_id": "inv_1",
-          "user_content": {
-            "parts": [{"text": "Hello"}],
-            "role": "user"
-          },
-          "final_response": {
-            "parts": [{"text": "Hi there!"}],
-            "role": null
-          },
-          "intermediate_data": {
-            "tool_uses": [],
-            "intermediate_responses": []
-          },
-          "creation_timestamp": 1234567890.0
-        }
-      ],
-      "session_input": {
-        "app_name": "my_app",
-        "user_id": "user",
-        "state": {}
-      },
-      "creation_timestamp": 1234567890.0
-    }
-  ],
-  "creation_timestamp": 1234567890.0
-}
-```
-
-## Built-in Evaluators
-
-1. **ResponseEvaluator**: Compare final responses (exact or semantic similarity)
-2. **TrajectoryEvaluator**: Validate tool uses and intermediate responses
-3. **CostEvaluator**: Check if cost is within threshold
-4. **LatencyEvaluator**: Check if execution time is within threshold
-
-## HTML Reports
-
-Generate interactive HTML dashboards:
-
-- **Left Sidebar**: Summary metrics and execution list
-- **Main Panel**: Detailed view with:
-  - Execution details (time, cost, tokens, status)
-  - Evaluator results (pass/fail, scores, details)
-  - Conversation history (expected vs actual)
-- **Features**:
-  - Click to explore different executions
-  - Color-coded status indicators
-  - Dark mode support
-  - Responsive design
-  - Self-contained (no external dependencies)
 
 ## Development
 
-### Setup Development Environment
-
 ```bash
-git clone https://github.com/yourusername/judge-llm.git
-cd judge-llm
+# Setup
 pip install -e ".[dev]"
-```
 
-### Run Tests
-
-```bash
+# Run tests
 pytest
+
+# Format code
+black judge_llm && ruff check judge_llm
 ```
 
-### Code Formatting
-
-```bash
-black judge_llm
-ruff check judge_llm
-```
-
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+Contributions welcome! Fork, create a feature branch, add tests, and submit a PR.
 
 ## License
 
-This project is licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0)**.
+Licensed under **CC BY-NC-SA 4.0** - Free for non-commercial use with attribution. See [LICENSE](LICENSE) for details.
 
-**What this means:**
-- ✅ Free to use for non-commercial purposes
-- ✅ Free to modify and create derivatives
-- ✅ Free to share and distribute
-- ✅ Can submit issues and pull requests
-- ❌ Cannot use commercially (including hosting as a paid cloud service)
-- ❌ Cannot create closed-source derivatives
-- ⚠️ Must provide attribution and use the same license for derivatives
-
-For commercial licensing inquiries, please contact the project maintainers.
-
-See the [LICENSE](LICENSE) file for full details or visit https://creativecommons.org/licenses/by-nc-sa/4.0/
-
-## Roadmap
-
-- [ ] Add more LLM provider integrations (Gemini, OpenAI, Claude)
-- [ ] Add semantic similarity evaluator using embeddings
-- [ ] Add support for streaming responses
-- [ ] Add caching layer for provider responses
-- [ ] Add CI/CD pipeline
-- [ ] Add more example use cases
-- [ ] Publish to PyPI
-
-## Support
-
-- GitHub Issues: https://github.com/yourusername/judge-llm/issues
-- Documentation: https://github.com/yourusername/judge-llm#readme
-
-## Acknowledgments
-
-Built with:
-- Pydantic for data validation
-- Click for CLI interface
-- Jinja2 for HTML templating
-- Rich for beautiful console output
+For commercial licensing, contact the maintainers.
