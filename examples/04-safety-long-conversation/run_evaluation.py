@@ -193,7 +193,7 @@ def run_programmatically():
             },
             # Built-in evaluators
             {
-                "type": "response_validator",
+                "type": "response_evaluator",
                 "enabled": True,
                 "config": {
                     "similarity_threshold": 0.6,

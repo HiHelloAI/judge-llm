@@ -51,13 +51,13 @@ providers:
 
 # Default evaluators - applied to all tests unless overridden
 evaluators:
-  - type: response_validator
+  - type: response_evaluator
     enabled: true
     config:
       similarity_threshold: 0.8
       match_type: exact
 
-  - type: trajectory_validator
+  - type: trajectory_evaluator
     enabled: true
     config:
       sequence_match_type: exact

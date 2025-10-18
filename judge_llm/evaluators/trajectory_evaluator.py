@@ -1,4 +1,4 @@
-"""Trajectory validator evaluator"""
+"""Trajectory evaluator"""
 
 from typing import Any, Dict, Optional
 from judge_llm.core.models import EvalCase, ProviderResult, EvaluatorResult
@@ -6,8 +6,8 @@ from judge_llm.evaluators.base import BaseEvaluator
 from judge_llm.utils.logger import get_logger
 
 
-class TrajectoryValidator(BaseEvaluator):
-    """Validate tool uses and intermediate responses"""
+class TrajectoryEvaluator(BaseEvaluator):
+    """Evaluate tool uses and intermediate responses"""
 
     def __init__(self, config: Dict[str, Any] = None):
         super().__init__(config)
@@ -36,7 +36,7 @@ class TrajectoryValidator(BaseEvaluator):
         sequence_match_type = config.get("sequence_match_type", "exact")
         allow_partial_match = config.get("allow_partial_match", False)
 
-        self.logger.debug(f"TrajectoryValidator evaluating case: {eval_case.eval_id}")
+        self.logger.debug(f"TrajectoryEvaluator evaluating case: {eval_case.eval_id}")
 
         if not provider_result.success:
             return EvaluatorResult(

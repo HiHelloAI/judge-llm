@@ -157,8 +157,8 @@ def run(
                     }
                 ],
                 "evaluators": [
-                    {"type": "response_validator", "enabled": True, "config": {}},
-                    {"type": "trajectory_validator", "enabled": True, "config": {}},
+                    {"type": "response_evaluator", "enabled": True, "config": {}},
+                    {"type": "trajectory_evaluator", "enabled": True, "config": {}},
                 ],
                 "reporters": [{"type": r, "output_path": output} for r in report],
             }

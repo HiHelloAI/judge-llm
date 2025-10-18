@@ -26,7 +26,7 @@ Sets defaults that apply to **all** test cases:
 
 ```yaml
 evaluators:
-  - type: response_validator
+  - type: response_evaluator
     enabled: true
     config:
       similarity_threshold: 0.6    # Default: 60% similarity
@@ -74,7 +74,7 @@ evaluators:
   "eval_id": "test_002_strict_exact_match",
   "conversation": [...],
   "evaluator_config": {
-    "ResponseValidator": {
+    "ResponseEvaluator": {
       "match_type": "exact",
       "similarity_threshold": 1.0,
       "case_sensitive": true,
@@ -101,7 +101,7 @@ evaluators:
   "eval_id": "test_003_lenient_creative",
   "conversation": [...],
   "evaluator_config": {
-    "ResponseValidator": {
+    "ResponseEvaluator": {
       "match_type": "recall",
       "similarity_threshold": 0.3
     }
@@ -125,7 +125,7 @@ evaluators:
   "eval_id": "test_004_high_precision_factual",
   "conversation": [...],
   "evaluator_config": {
-    "ResponseValidator": {
+    "ResponseEvaluator": {
       "match_type": "rouge",
       "similarity_threshold": 0.85
     }
@@ -152,7 +152,7 @@ evaluators:
       "max_latency_seconds": 5,
       "warn_threshold_seconds": 2
     },
-    "ResponseValidator": {
+    "ResponseEvaluator": {
       "match_type": "exact",
       "similarity_threshold": 1.0
     }
@@ -249,19 +249,19 @@ python -m judge_llm.cli evaluate --config config.yaml
 
 ```
 test_001_uses_defaults:
-  ResponseValidator: threshold=0.6, match_type=semantic  (global defaults)
+  ResponseEvaluator: threshold=0.6, match_type=semantic  (global defaults)
 
 test_002_strict_exact_match:
-  ResponseValidator: threshold=1.0, match_type=exact  (overridden)
+  ResponseEvaluator: threshold=1.0, match_type=exact  (overridden)
 
 test_003_lenient_creative:
-  ResponseValidator: threshold=0.3, match_type=recall  (overridden)
+  ResponseEvaluator: threshold=0.3, match_type=recall  (overridden)
 
 test_004_high_precision_factual:
-  ResponseValidator: threshold=0.85, match_type=rouge  (overridden)
+  ResponseEvaluator: threshold=0.85, match_type=rouge  (overridden)
 
 test_005_fast_latency_required:
-  ResponseValidator: threshold=1.0, match_type=exact  (overridden)
+  ResponseEvaluator: threshold=1.0, match_type=exact  (overridden)
   LatencyEvaluator: max=5s  (overridden)
 
 test_006_expensive_operation_allowed:
@@ -271,7 +271,7 @@ test_006_expensive_operation_allowed:
 
 ## Key Takeaways
 
-1. **Evaluator name matters**: Use class name `"ResponseValidator"`, not type `"response_validator"`
+1. **Evaluator name matters**: Use class name `"ResponseEvaluator"`, not type `"response_evaluator"`
 
 2. **Partial overrides work**: You don't need to specify all settings, only what you want to change
 

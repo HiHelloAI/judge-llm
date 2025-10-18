@@ -101,7 +101,7 @@ report = evaluate(
     ],
     evaluators=[
         {
-            "type": "response_validator",
+            "type": "response_evaluator",
             "enabled": True,
             "config": {"similarity_threshold": 0.8},
         },
@@ -134,7 +134,7 @@ providers:
     model: mock-model-v1
 
 evaluators:
-  - type: response_validator
+  - type: response_evaluator
     config: {similarity_threshold: 0.8}
   - type: cost_evaluator
     config: {max_cost_per_case: 0.10}
@@ -186,13 +186,13 @@ providers:
 
 evaluators:
   # Each evaluator has its own config
-  - type: response_validator
+  - type: response_evaluator
     enabled: true
     config:
       similarity_threshold: 0.8
       match_type: exact
 
-  - type: trajectory_validator
+  - type: trajectory_evaluator
     enabled: true
     config:
       sequence_match_type: exact
@@ -423,8 +423,8 @@ Judge LLM uses evaluation sets in JSON format:
 
 ## Built-in Evaluators
 
-1. **ResponseValidator**: Compare final responses (exact or semantic similarity)
-2. **TrajectoryValidator**: Validate tool uses and intermediate responses
+1. **ResponseEvaluator**: Compare final responses (exact or semantic similarity)
+2. **TrajectoryEvaluator**: Validate tool uses and intermediate responses
 3. **CostEvaluator**: Check if cost is within threshold
 4. **LatencyEvaluator**: Check if execution time is within threshold
 

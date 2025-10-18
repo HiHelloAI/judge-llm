@@ -12,7 +12,7 @@ This applies to **all test cases** by default:
 
 ```yaml
 evaluators:
-  - type: response_validator
+  - type: response_evaluator
     enabled: true
     config:
       similarity_threshold: 0.6
@@ -29,7 +29,7 @@ This **overrides** the global config for a **specific test case**:
   "conversation": [...],
   "session_input": {...},
   "evaluator_config": {
-    "ResponseValidator": {
+    "ResponseEvaluator": {
       "similarity_threshold": 0.8,
       "match_type": "rouge"
     }
@@ -87,7 +87,7 @@ def get_config(self, eval_config: Optional[Dict[str, Any]] = None) -> Dict[str, 
 **config.yaml** (global):
 ```yaml
 evaluators:
-  - type: response_validator
+  - type: response_evaluator
     config:
       similarity_threshold: 0.6  # Default for most tests
 ```
@@ -97,7 +97,7 @@ evaluators:
 {
   "eval_id": "strict_test_001",
   "evaluator_config": {
-    "ResponseValidator": {
+    "ResponseEvaluator": {
       "similarity_threshold": 0.9  // This test requires 90% match
     }
   }
@@ -141,7 +141,7 @@ evaluators:
 {
   "eval_id": "exact_match_test",
   "evaluator_config": {
-    "ResponseValidator": {
+    "ResponseEvaluator": {
       "match_type": "exact",
       "similarity_threshold": 1.0,
       "case_sensitive": true
@@ -151,7 +151,7 @@ evaluators:
 {
   "eval_id": "lenient_test",
   "evaluator_config": {
-    "ResponseValidator": {
+    "ResponseEvaluator": {
       "match_type": "recall",
       "similarity_threshold": 0.5
     }
@@ -171,8 +171,8 @@ evaluator_config: {
 ```
 
 **Important**: The key must be the **evaluator class name**, not the type:
-- ✅ `"ResponseValidator"` (class name)
-- ❌ `"response_validator"` (type name)
+- ✅ `"ResponseEvaluator"` (class name)
+- ❌ `"response_evaluator"` (type name)
 
 ## Usage in Custom Evaluators
 
@@ -217,7 +217,7 @@ class MyEvaluator(BaseEvaluator):
       "eval_id": "test_001_exact",
       "conversation": [...],
       "evaluator_config": {
-        "ResponseValidator": {
+        "ResponseEvaluator": {
           "match_type": "exact",
           "similarity_threshold": 1.0
         }
@@ -227,7 +227,7 @@ class MyEvaluator(BaseEvaluator):
       "eval_id": "test_002_semantic",
       "conversation": [...],
       "evaluator_config": {
-        "ResponseValidator": {
+        "ResponseEvaluator": {
           "match_type": "semantic",
           "similarity_threshold": 0.7
         }

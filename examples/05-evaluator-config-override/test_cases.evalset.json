@@ -31,10 +31,6 @@
         "system_instruction": "You are a helpful AI assistant."
       },
       "creation_timestamp": 1704067100.0
-      // NO evaluator_config - will use global defaults from config.yaml:
-      // - similarity_threshold: 0.6
-      // - match_type: semantic
-      // - max_latency_seconds: 30
     },
 
     {
@@ -65,15 +61,13 @@
       },
       "creation_timestamp": 1704067200.0,
       "evaluator_config": {
-        "ResponseValidator": {
+        "ResponseEvaluator": {
           "match_type": "exact",
           "similarity_threshold": 1.0,
           "case_sensitive": true,
           "normalize_whitespace": false
         }
       }
-      // OVERRIDE: This test requires EXACT match (100% threshold, case-sensitive)
-      // Global config (0.6, semantic) is ignored for this test
     },
 
     {
@@ -104,13 +98,11 @@
       },
       "creation_timestamp": 1704067300.0,
       "evaluator_config": {
-        "ResponseValidator": {
+        "ResponseEvaluator": {
           "match_type": "recall",
           "similarity_threshold": 0.3
         }
       }
-      // OVERRIDE: Creative content is more lenient - only need 30% word overlap
-      // Using "recall" metric which doesn't penalize extra creative content
     },
 
     {
@@ -141,13 +133,11 @@
       },
       "creation_timestamp": 1704067400.0,
       "evaluator_config": {
-        "ResponseValidator": {
+        "ResponseEvaluator": {
           "match_type": "rouge",
           "similarity_threshold": 0.85
         }
       }
-      // OVERRIDE: Factual questions need high precision (85% threshold)
-      // Using ROUGE metric for better semantic matching
     },
 
     {
@@ -182,14 +172,11 @@
           "max_latency_seconds": 5,
           "warn_threshold_seconds": 2
         },
-        "ResponseValidator": {
+        "ResponseEvaluator": {
           "match_type": "exact",
           "similarity_threshold": 1.0
         }
       }
-      // OVERRIDE MULTIPLE EVALUATORS:
-      // - LatencyEvaluator: Only 5 seconds allowed (vs global 30s)
-      // - ResponseValidator: Exact match required for simple math
     },
 
     {
@@ -228,9 +215,6 @@
           "warn_threshold_seconds": 60
         }
       }
-      // OVERRIDE: Complex operations need more resources
-      // - CostEvaluator: Allow up to $0.50 (vs global $0.10)
-      // - LatencyEvaluator: Allow 2 minutes (vs global 30s)
     }
   ]
 }

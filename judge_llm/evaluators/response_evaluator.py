@@ -1,4 +1,4 @@
-"""Response validator evaluator
+"""Response evaluator
 
 Evaluates agent responses against expected responses using various similarity metrics.
 Supports ROUGE-1 (preferred) with fallback to simpler metrics.
@@ -11,8 +11,8 @@ from judge_llm.evaluators.base import BaseEvaluator
 from judge_llm.utils.logger import get_logger
 
 
-class ResponseValidator(BaseEvaluator):
-    """Validate final responses against expected responses
+class ResponseEvaluator(BaseEvaluator):
+    """Evaluate final responses against expected responses
 
     Supports multiple similarity metrics:
     - exact: Exact string matching (after normalization)
@@ -71,7 +71,7 @@ class ResponseValidator(BaseEvaluator):
             self.logger.debug(f"Auto-selecting ROUGE metric (available)")
 
         self.logger.debug(
-            f"ResponseValidator evaluating case: {eval_case.eval_id} "
+            f"ResponseEvaluator evaluating case: {eval_case.eval_id} "
             f"(match_type={match_type}, threshold={similarity_threshold})"
         )
 

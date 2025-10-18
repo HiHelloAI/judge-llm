@@ -62,7 +62,7 @@ evaluators:
       judge_model: "gemini-2.0-flash-exp"
 
   # Built-in evaluators
-  - type: response_validator
+  - type: response_evaluator
     enabled: true
     config:
       similarity_threshold: 0.6

@@ -120,7 +120,7 @@ def evaluate(
             }]
         evaluators: List of evaluator configuration dicts:
             [{
-                "type": "response_validator",
+                "type": "response_evaluator",
                 "enabled": True,
                 "config": {"similarity_threshold": 0.8}
             }]
@@ -153,7 +153,7 @@ def evaluate(
             agent={"log_level": "INFO", "num_runs": 1},
             dataset={"loader": "local_file", "paths": ["./data.json"]},
             providers=[{"type": "mock", "agent_id": "test"}],
-            evaluators=[{"type": "response_validator", "config": {}}],
+            evaluators=[{"type": "response_evaluator", "config": {}}],
             reporters=[{"type": "console"}]
         )
     """

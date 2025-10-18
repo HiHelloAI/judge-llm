@@ -88,7 +88,7 @@ def main():
         ],
         evaluators=[
             {
-                "type": "response_validator",
+                "type": "response_evaluator",
                 "config": {"similarity_threshold": 0.7}
             },
             {

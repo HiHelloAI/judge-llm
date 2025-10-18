@@ -33,14 +33,14 @@ providers:
     # api_key: "your-api-key-here"
 
 evaluators:
-  - type: response_validator
+  - type: response_evaluator
     enabled: true
     config:
       similarity_threshold: 0.7
       match_type: semantic
       case_sensitive: false
 
-  - type: trajectory_validator
+  - type: trajectory_evaluator
     enabled: true
     config:
       sequence_match_type: flexible

@@ -45,14 +45,14 @@ def get_config(self, eval_config: Optional[Dict[str, Any]] = None) -> Dict[str, 
 
 | Evaluator | Line | Usage |
 |-----------|------|-------|
-| **ResponseValidator** | [response_validator.py:62](judge_llm/evaluators/response_validator.py#L62) | ✅ `config = self.get_config(eval_config)` |
-| **TrajectoryValidator** | [trajectory_validator.py:35](judge_llm/evaluators/trajectory_validator.py#L35) | ✅ `config = self.get_config(eval_config)` |
+| **ResponseEvaluator** | [response_evaluator.py:62](judge_llm/evaluators/response_evaluator.py#L62) | ✅ `config = self.get_config(eval_config)` |
+| **TrajectoryEvaluator** | [trajectory_evaluator.py:35](judge_llm/evaluators/trajectory_evaluator.py#L35) | ✅ `config = self.get_config(eval_config)` |
 | **CostEvaluator** | [cost_evaluator.py:35](judge_llm/evaluators/cost_evaluator.py#L35) | ✅ `config = self.get_config(eval_config)` |
 | **LatencyEvaluator** | [latency_evaluator.py:35](judge_llm/evaluators/latency_evaluator.py#L35) | ✅ `config = self.get_config(eval_config)` |
 
 ## Verification
 
-### ResponseValidator (response_validator.py:61-66)
+### ResponseEvaluator (response_evaluator.py:61-66)
 
 ```python
 def evaluate(self, eval_case, agent_metadata, provider_result, eval_config=None):
@@ -64,7 +64,7 @@ def evaluate(self, eval_case, agent_metadata, provider_result, eval_config=None)
     normalize_whitespace = config.get("normalize_whitespace", True)
 ```
 
-### TrajectoryValidator (trajectory_validator.py:34-37)
+### TrajectoryEvaluator (trajectory_evaluator.py:34-37)
 
 ```python
 def evaluate(self, eval_case, agent_metadata, provider_result, eval_config=None):
@@ -101,7 +101,7 @@ def evaluate(self, eval_case, agent_metadata, provider_result, eval_config=None)
 **config.yaml (Global)**:
 ```yaml
 evaluators:
-  - type: response_validator
+  - type: response_evaluator
     config:
       similarity_threshold: 0.6
       match_type: semantic
@@ -112,7 +112,7 @@ evaluators:
 {
   "eval_id": "test_001",
   "evaluator_config": {
-    "ResponseValidator": {
+    "ResponseEvaluator": {
       "similarity_threshold": 0.9,
       "match_type": "exact"
     }

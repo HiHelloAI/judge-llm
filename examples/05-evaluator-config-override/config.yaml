@@ -28,8 +28,8 @@ providers:
     max_tokens: 1024
 
 evaluators:
-  # Global ResponseValidator config - applies to all tests by default
-  - type: response_validator
+  # Global ResponseEvaluator config - applies to all tests by default
+  - type: response_evaluator
     enabled: true
     config:
       # GLOBAL DEFAULTS - used unless overridden by per-test evaluator_config

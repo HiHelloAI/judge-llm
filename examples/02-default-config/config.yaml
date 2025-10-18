@@ -29,7 +29,7 @@ providers:
     # api_key: "your-api-key-here"
 
 evaluators:
-  - type: response_validator
+  - type: response_evaluator
     enabled: false
 
 reporters:
