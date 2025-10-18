@@ -245,5 +245,81 @@ def list(entity):
     click.echo()
 
 
+@main.command()
+@click.option(
+    "--db",
+    "-d",
+    type=click.Path(exists=True),
+    help="Path to SQLite database file to open in dashboard",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    default="./dashboard.html",
+    help="Output path for dashboard HTML file",
+)
+@click.option(
+    "--no-browser",
+    is_flag=True,
+    help="Don't automatically open browser",
+)
+def dashboard(db, output, no_browser):
+    """Generate and launch evaluation dashboard"""
+    import shutil
+    import webbrowser
+    from pathlib import Path
+
+    set_log_level("INFO")
+    logger = get_logger()
+
+    try:
+        # Get the dashboard template
+        template_path = Path(__file__).parent / "templates" / "monitor.html"
+
+        if not template_path.exists():
+            click.echo(f"✗ Dashboard template not found at: {template_path}", err=True)
+            raise click.Abort()
+
+        # Copy to output location
+        output_file = Path(output).expanduser().resolve()
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+
+        shutil.copy(template_path, output_file)
+
+        click.echo("=" * 80)
+        click.echo("✅ Dashboard Generated Successfully!")
+        click.echo("=" * 80)
+        click.echo()
+        click.echo(f"📁 Dashboard: {output_file}")
+
+        if db:
+            click.echo(f"📊 Database: {Path(db).resolve()}")
+
+        click.echo()
+        click.echo("📖 How to use:")
+        click.echo("   1. Dashboard will open in your browser")
+        click.echo("   2. Drag and drop your .db file (or click to browse)")
+        click.echo("   3. Explore your evaluation results!")
+        click.echo()
+        click.echo("🔒 Privacy: All data stays local - no uploads or external services")
+        click.echo()
+        click.echo("=" * 80)
+
+        # Open in browser
+        if not no_browser:
+            click.echo("\n🌐 Opening dashboard in browser...")
+            webbrowser.open(f"file://{output_file}")
+        else:
+            click.echo(f"\n💡 Open manually: file://{output_file}")
+
+        click.echo("✓ Dashboard ready!", err=False)
+
+    except Exception as e:
+        logger.error(f"Dashboard generation failed: {e}")
+        click.echo(f"\n✗ Dashboard generation failed: {e}", err=True)
+        raise click.Abort()
+
+
 if __name__ == "__main__":
     main()
