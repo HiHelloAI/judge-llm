@@ -39,6 +39,7 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
 ]
@@ -87,3 +88,22 @@ line-length = 100
 target-version = "py39"
 select = ["E", "F", "I", "N", "W"]
 ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--showlocals",
+]
+markers = [
+    "unit: Unit tests for individual components",
+    "integration: Integration tests for end-to-end workflows",
+    "slow: Tests that take a long time to run",
+    "requires_api: Tests that require external API access",
+    "database: Tests that use database functionality",
+]
