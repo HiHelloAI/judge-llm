@@ -515,12 +515,18 @@ def _execute_single_task(
     evaluator_results = []
     for evaluator in evaluators:
         try:
+            # Extract per-test-case config for this specific evaluator
+            evaluator_specific_config = None
+            if hasattr(eval_case, 'evaluator_config') and eval_case.evaluator_config:
+                evaluator_name = evaluator.get_evaluator_name()
+                evaluator_specific_config = eval_case.evaluator_config.get(evaluator_name, None)
+
             # Pass per-test-case evaluator config if available
             eval_result = evaluator.evaluate(
                 eval_case=eval_case,
                 agent_metadata=provider.agent_metadata,
                 provider_result=provider_result,
-                eval_config=eval_case.evaluator_config if hasattr(eval_case, 'evaluator_config') else None
+                eval_config=evaluator_specific_config
             )
             evaluator_results.append(eval_result)
         except Exception as e:

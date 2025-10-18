@@ -121,10 +121,23 @@ registry = get_evaluator_registry()
 
 ## Additional Fixes
 
-### JSON Syntax Fix
+### 1. JSON Syntax Fix
 Fixed `examples/05-evaluator-config-override/test_cases.evalset.json`:
 - Removed all JavaScript-style comments (//)
 - File is now valid JSON and can be parsed correctly
+
+### 2. Evaluator Config Override Fix
+Fixed `judge_llm/core/evaluate.py` (lines 518-522):
+- **Issue**: Previously passed entire `evaluator_config` dict to each evaluator
+- **Fix**: Now extracts evaluator-specific config from nested structure
+- **Why this matters**: The evalset.json structure is:
+  ```json
+  "evaluator_config": {
+    "ResponseEvaluator": {...},
+    "LatencyEvaluator": {...}
+  }
+  ```
+  Each evaluator now receives only its own config, enabling proper per-test-case overrides
 
 ## Testing
 
@@ -133,6 +146,8 @@ All evaluators confirmed working:
 - ✓ Registry lookups successful
 - ✓ No old naming references remain in source code
 - ✓ JSON files valid
+- ✓ Config merging logic tested and working
+- ✓ Evaluator-specific config extraction tested and working
 
 ## Date
 Completed: 2025-10-18
