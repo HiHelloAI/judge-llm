@@ -83,6 +83,12 @@ registry = get_evaluator_registry()
     - Updated `TrajectoryValidator` → `TrajectoryEvaluator`
     - **BONUS FIX**: Removed invalid JSON comments (//) to make file valid JSON
 
+### New Example Script (1 file)
+15. **examples/05-evaluator-config-override/run_evaluation.py**
+    - Created Python script to run evaluation programmatically
+    - Demonstrates using config file with evaluator_config overrides
+    - Provides detailed output showing how overrides work
+
 ## Breaking Changes
 
 ⚠️ **Users must update their configurations**:

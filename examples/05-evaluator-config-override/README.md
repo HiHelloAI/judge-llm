@@ -17,7 +17,8 @@ Per-test settings **override** global settings, allowing fine-grained control ov
 05-evaluator-config-override/
 ├── config.yaml              # Global evaluator defaults
 ├── test_cases.evalset.json  # Test cases with per-test overrides
-└── README.md
+├── run_evaluation.py        # Python script to run evaluation
+└── README.md                # This file
 ```
 
 ## Global Configuration (config.yaml)
@@ -240,9 +241,39 @@ Merged result:
 
 ## Running the Example
 
+### Option 1: Using the Python Script (Recommended)
+
+```bash
+cd examples/05-evaluator-config-override
+python run_evaluation.py
+```
+
+The script provides detailed output showing:
+- Global defaults vs per-test overrides
+- Which configuration each test case uses
+- Evaluation results with config details
+- Report locations
+
+### Option 2: Using the CLI
+
 ```bash
 cd examples/05-evaluator-config-override
 python -m judge_llm.cli evaluate --config config.yaml
+```
+
+### Option 3: Programmatically from Python
+
+```python
+from judge_llm.core.evaluate import evaluate
+
+report = evaluate(
+    config="examples/05-evaluator-config-override/config.yaml",
+    validate_config=True,
+    use_defaults=True
+)
+
+print(f"Overall success: {report.overall_success}")
+print(f"Total test cases: {len(report.execution_runs)}")
 ```
 
 ## Expected Output
