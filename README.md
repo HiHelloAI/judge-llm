@@ -8,6 +8,10 @@
   [Quick Start](#quick-start) • [Demo](#demo) • [Features](#features) • [Examples](#testing-examples) • [Reports](#reports--dashboard)
 </div>
 
+<div align="center">
+  <img src="assets/judge-llm.gif" alt="Judge LLM Demo" width="100%"/>
+</div>
+
 ## Purpose
 
 JUDGE LLM helps you **evaluate AI agents and LLM providers** by running test cases against your models and measuring:
@@ -114,12 +118,6 @@ report = evaluate(
 
 print(f"Success: {report.success_rate:.1%} | Cost: ${report.total_cost:.4f}")
 ```
-
-## Demo
-
-<div align="center">
-  <img src="assets/judge-llm.gif" alt="Judge LLM Demo" width="100%"/>
-</div>
 
 ## Configuration
 
