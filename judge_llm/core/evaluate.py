@@ -24,6 +24,7 @@ from judge_llm.reporters.base import BaseReporter
 from judge_llm.reporters.console_reporter import ConsoleReporter
 from judge_llm.reporters.json_reporter import JSONReporter
 from judge_llm.reporters.html_reporter import HTMLReporter
+from judge_llm.reporters.database_reporter import DatabaseReporter
 from judge_llm.utils.logger import get_logger, set_log_level
 
 
@@ -431,6 +432,9 @@ def _initialize_reporters(reporters_config: List[Dict[str, Any]]) -> List[BaseRe
         elif reporter_type == "html":
             output_path = reporter_config.get("output_path", "./report.html")
             reporters.append(HTMLReporter(output_path))
+        elif reporter_type == "database":
+            db_path = reporter_config.get("db_path", "./judge_llm_results.db")
+            reporters.append(DatabaseReporter(db_path))
         else:
             raise ValueError(f"Unknown reporter type: {reporter_type}")
 
