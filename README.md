@@ -479,7 +479,20 @@ Contributions are welcome! Please:
 
 ## License
 
-MIT License - see LICENSE file for details
+This project is licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0)**.
+
+**What this means:**
+- ✅ Free to use for non-commercial purposes
+- ✅ Free to modify and create derivatives
+- ✅ Free to share and distribute
+- ✅ Can submit issues and pull requests
+- ❌ Cannot use commercially (including hosting as a paid cloud service)
+- ❌ Cannot create closed-source derivatives
+- ⚠️ Must provide attribution and use the same license for derivatives
+
+For commercial licensing inquiries, please contact the project maintainers.
+
+See the [LICENSE](LICENSE) file for full details or visit https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 ## Roadmap
 

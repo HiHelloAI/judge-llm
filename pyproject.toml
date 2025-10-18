@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "A lightweight LLM evaluation framework for comparing and testing AI providers"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
+license = {text = "CC-BY-NC-SA-4.0"}
 authors = [
     {name = "Your Name", email = "your.email@example.com"}
 ]
@@ -16,7 +16,7 @@ keywords = ["llm", "evaluation", "testing", "ai", "gemini", "openai", "claude"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
