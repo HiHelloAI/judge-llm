@@ -154,6 +154,7 @@ class ExecutionRun(BaseModel):
     evaluator_results: List[EvaluatorResult] = Field(default_factory=list)
     overall_success: bool
     timestamp: datetime = Field(default_factory=datetime.now)
+    eval_case: Optional["EvalCase"] = None  # Original eval case with expected responses
 
 
 class EvaluationReport(BaseModel):

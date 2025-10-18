@@ -280,15 +280,15 @@
         // Build conversation HTML with side-by-side comparison
         let conversationHTML = '<div class="space-y-6">';
 
-        // Get expected conversation from eval case
-        const evalCase = reportData.execution_runs[index];
-        const expectedConversation = evalCase.provider_result.conversation_history;
+        // Get expected conversation from the original eval_case (not provider_result!)
+        const evalCase = exec.eval_case;
+        const expectedConversation = evalCase ? evalCase.conversation : [];
 
         exec.provider_result.conversation_history.forEach((inv, idx) => {
             const userText = inv.user_content.parts.map(p => p.text || '').join(' ');
             const actualResponse = inv.final_response.parts.map(p => p.text || '').join(' ');
 
-            // Get expected response if available
+            // Get expected response from the original eval case
             const expectedInv = expectedConversation[idx];
             const expectedResponse = expectedInv ? expectedInv.final_response.parts.map(p => p.text || '').join(' ') : '';
 
@@ -330,14 +330,14 @@
                         </div>
 
                         <!-- Expected Response -->
-                        <div class="p-4 bg-gray-50/50 dark:bg-gray-900/50">
+                        <div class="p-4">
                             <div class="flex items-center justify-between mb-2">
                                 <div class="flex items-center gap-2">
                                     <span class="material-symbols-outlined text-green-600 text-lg">check_circle</span>
                                     <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Expected Response</span>
                                 </div>
                             </div>
-                            <div class="text-sm text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 p-3 rounded whitespace-pre-wrap">
+                            <div class="text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 p-3 rounded whitespace-pre-wrap">
                                 ${expectedResponse || '<em class="text-gray-500">No expected response defined</em>'}
                             </div>
                         </div>

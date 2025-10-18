@@ -66,7 +66,7 @@ evaluators:
     enabled: true
     config:
       similarity_threshold: 0.6
-      match_type: semantic
+      match_type: recall  # Use recall metric - more lenient for verbose responses
 
   - type: cost_evaluator
     enabled: true

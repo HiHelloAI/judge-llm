@@ -538,6 +538,7 @@ def _execute_single_task(
         provider_result=provider_result,
         evaluator_results=evaluator_results,
         overall_success=overall_success,
+        eval_case=eval_case,  # Include original eval case for expected responses
     )
 
     logger.debug(f"Execution {execution_id} completed with status: {overall_success}")
