@@ -14,6 +14,12 @@ try:
 except ImportError:
     pass  # google-genai not installed
 
+try:
+    from judge_llm.providers.adk_provider import GoogleADKProvider
+    register_provider("google_adk", GoogleADKProvider)
+except ImportError:
+    pass  # google-adk not installed
+
 __all__ = [
     "BaseProvider",
     "MockProvider",

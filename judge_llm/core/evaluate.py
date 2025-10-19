@@ -367,16 +367,20 @@ def _initialize_providers(
         agent_config_path = provider_config.get("agent_config_path")
 
         # All other config items are passed as provider_metadata
+        # Exclude agent_metadata as it's passed separately
         provider_metadata = {
             k: v
             for k, v in provider_config.items()
-            if k not in ["type", "agent_id", "agent_config_path"]
+            if k not in ["type", "agent_id", "agent_config_path", "agent_metadata"]
         }
+
+        # Use provider-specific agent_metadata if provided, otherwise use global agent_metadata
+        provider_agent_metadata = provider_config.get("agent_metadata", agent_metadata)
 
         provider = provider_class(
             agent_id=agent_id,
             agent_config_path=agent_config_path,
-            agent_metadata=agent_metadata,
+            agent_metadata=provider_agent_metadata,
             **provider_metadata,
         )
 
