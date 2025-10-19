@@ -605,7 +605,7 @@ if __name__ == '__main__':
 
 ## Related Documentation
 
-- [CLI Reference](./cli-reference.md)
-- [Configuration Guide](./configuration.md)
-- [Custom Evaluators](../evaluators/custom-evaluators.md)
-- [Custom Reporters](../reporters/custom-reporters.md)
+- [CLI Reference](./cli-reference)
+- [Configuration Guide](./configuration)
+- [Custom Evaluators](../evaluators/custom-evaluators)
+- [Custom Reporters](../reporters/custom-reporters)

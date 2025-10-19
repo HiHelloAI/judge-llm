@@ -539,6 +539,6 @@ Fix reported issues, then run again.
 
 ## Related Documentation
 
-- [Configuration Guide](./configuration.md)
-- [Python API Reference](./python-api.md)
-- [Quick Start](../tutorial-basics/quick-start.md)
+- [Configuration Guide](./configuration)
+- [Python API Reference](./python-api)
+- [Quick Start](../tutorial-basics/installation)

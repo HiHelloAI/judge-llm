@@ -613,8 +613,8 @@ Check each file to see where value is defined.
 
 ## Related Documentation
 
-- [Configuration Guide](./configuration.md)
-- [Environment Variables](./environment-variables.md)
-- [Custom Evaluators](../evaluators/custom-evaluators.md)
-- [Custom Reporters](../reporters/custom-reporters.md)
-- [Examples](../examples.md)
+- [Configuration Guide](./configuration)
+- [Environment Variables](./environment-variables)
+- [Custom Evaluators](../evaluators/custom-evaluators)
+- [Custom Reporters](../reporters/custom-reporters)
+- [Examples](../examples)

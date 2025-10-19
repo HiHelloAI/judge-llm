@@ -123,9 +123,9 @@ Summary:
 
 Now that you have Judge LLM installed, proceed to:
 
-- [Your First Evaluation](./first-evaluation.md) - Run your first evaluation
-- [Basic Usage Guide](../guides/basic-usage.md) - Learn common patterns
-- [Examples](../examples.md) - Explore working examples
+- [Your First Evaluation](./first-evaluation) - Run your first evaluation
+- [Basic Usage Guide](../guides/basic-usage) - Learn common patterns
+- [Examples](../examples) - Explore working examples
 
 ## Troubleshooting
 

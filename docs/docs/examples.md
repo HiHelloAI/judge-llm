@@ -439,9 +439,9 @@ Include example in documentation update.
 
 ## Related Documentation
 
-- [Quick Start](./tutorial-basics/quick-start.md)
-- [Configuration Guide](./guides/configuration.md)
-- [CLI Reference](./guides/cli-reference.md)
-- [Python API](./guides/python-api.md)
-- [Custom Evaluators](./evaluators/custom-evaluators.md)
-- [Custom Reporters](./reporters/custom-reporters.md)
+- [Quick Start](./tutorial-basics/installation)
+- [Configuration Guide](./guides/configuration)
+- [CLI Reference](./guides/cli-reference)
+- [Python API](./guides/python-api)
+- [Custom Evaluators](./evaluators/custom-evaluators)
+- [Custom Reporters](./reporters/custom-reporters)

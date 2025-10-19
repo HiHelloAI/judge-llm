@@ -205,7 +205,7 @@ jsonschema.validate(data, schema)
 
 ## Related Documentation
 
-- [Reporters Overview](./overview.md)
-- [Console Reporter](./console-reporter.md)
-- [HTML Reporter](./html-reporter.md)
-- [Database Reporter](./database-reporter.md)
+- [Reporters Overview](./overview)
+- [Console Reporter](./console-reporter)
+- [HTML Reporter](./html-reporter)
+- [Database Reporter](./database-reporter)

@@ -20,14 +20,14 @@ A **Reporter** is a component that:
 
 | Reporter | Output | Best For |
 |----------|--------|----------|
-| **[Console](./console-reporter.md)** | Terminal | Real-time monitoring, development |
-| **[HTML](./html-reporter.md)** | Interactive web page | Sharing results, detailed analysis |
-| **[JSON](./json-reporter.md)** | Machine-readable file | Programmatic analysis, CI/CD |
-| **[Database](./database-reporter.md)** | SQLite database | Historical tracking, trend analysis |
+| **[Console](./console-reporter)** | Terminal | Real-time monitoring, development |
+| **[HTML](./html-reporter)** | Interactive web page | Sharing results, detailed analysis |
+| **[JSON](./json-reporter)** | Machine-readable file | Programmatic analysis, CI/CD |
+| **[Database](./database-reporter)** | SQLite database | Historical tracking, trend analysis |
 
 ### Custom Reporters
 
-Create [custom reporters](./custom-reporters.md) for:
+Create [custom reporters](./custom-reporters) for:
 - CSV exports for spreadsheet analysis
 - Slack/email notifications
 - Datadog/metrics integration
@@ -304,12 +304,12 @@ reporters:
 
 ## Next Steps
 
-- [Console Reporter](./console-reporter.md) - Terminal output
-- [HTML Reporter](./html-reporter.md) - Interactive web reports
-- [JSON Reporter](./json-reporter.md) - Machine-readable export
-- [Database Reporter](./database-reporter.md) - SQLite persistence
-- [Custom Reporters](./custom-reporters.md) - Build your own
+- [Console Reporter](./console-reporter) - Terminal output
+- [HTML Reporter](./html-reporter) - Interactive web reports
+- [JSON Reporter](./json-reporter) - Machine-readable export
+- [Database Reporter](./database-reporter) - SQLite persistence
+- [Custom Reporters](./custom-reporters) - Build your own
 
 ## API Reference
 
-For implementation details, see the [BaseReporter API Reference](../api-reference/base-classes.md#basereporter).
+For implementation details, see the [BaseReporter API Reference](../guides/python-api).

@@ -107,7 +107,7 @@ reporters:
 - ✅ Clean, simple test configs
 - ✅ Easy to update implementations
 
-Learn more in the [Providers](./providers/custom-providers.md), [Evaluators](./evaluators/custom-evaluators.md), and [Reporters](./reporters/overview.md) documentation.
+Learn more in the [Configuration Guide](./guides/configuration), [Evaluators](./evaluators/custom-evaluators), and [Reporters](./reporters/overview) documentation.
 
 ## Use Cases
 
@@ -119,14 +119,14 @@ Learn more in the [Providers](./providers/custom-providers.md), [Evaluators](./e
 
 ## Next Steps
 
-1. [Install Judge LLM](./installation.md)
-2. [Follow the Quick Start guide](./quick-start.md)
-3. [Explore Examples](./examples/overview.md)
-4. [Learn Core Concepts](./core-concepts/overview.md)
+1. [Install Judge LLM](./tutorial-basics/installation)
+2. [Run your first evaluation](./tutorial-basics/first-evaluation)
+3. [Explore Examples](./examples/overview)
+4. [Read User Guides](./guides/basic-usage)
 
 ## Need Help?
 
-- 📚 Browse the [documentation](./guides/basic-usage.md)
-- 💡 Check out [examples](./examples/overview.md)
+- 📚 Browse the [documentation](./guides/basic-usage)
+- 💡 Check out [examples](./examples/overview)
 - 🐛 Report issues on [GitHub](https://github.com/yourusername/judge-llm/issues)
-- 🤝 Read the [contributing guide](./contributing/development-setup.md)
+- 🤝 Read the [configuration guide](./guides/configuration)

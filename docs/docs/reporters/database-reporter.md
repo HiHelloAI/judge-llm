@@ -481,8 +481,8 @@ conn.commit()
 
 ## Related Documentation
 
-- [Reporters Overview](./overview.md)
-- [Console Reporter](./console-reporter.md)
-- [JSON Reporter](./json-reporter.md)
-- [HTML Reporter](./html-reporter.md)
-- [Custom Reporters](./custom-reporters.md)
+- [Reporters Overview](./overview)
+- [Console Reporter](./console-reporter)
+- [JSON Reporter](./json-reporter)
+- [HTML Reporter](./html-reporter)
+- [Custom Reporters](./custom-reporters)

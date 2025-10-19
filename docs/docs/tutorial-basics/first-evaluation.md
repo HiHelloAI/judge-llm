@@ -293,10 +293,10 @@ Include system instructions:
 
 Now you're ready to:
 
-- [Explore Examples](../examples.md) - See more advanced examples
-- [Learn Configuration](../guides/configuration.md) - Master all config options
-- [Create Custom Evaluators](../evaluators/custom-evaluators.md) - Build domain-specific evaluators
-- [Use Python API](../guides/python-api.md) - Run evaluations programmatically
+- [Explore Examples](../examples) - See more advanced examples
+- [Learn Configuration](../guides/configuration) - Master all config options
+- [Create Custom Evaluators](../evaluators/custom-evaluators) - Build domain-specific evaluators
+- [Use Python API](../guides/python-api) - Run evaluations programmatically
 
 ## Troubleshooting
 

@@ -323,13 +323,13 @@ report2 = evaluate(
 
 ## Next Steps
 
-- [Configuration Guide](../guides/configuration.md) - Learn all configuration options
-- [Python API Reference](../guides/python-api.md) - Complete API documentation
-- [Custom Evaluators](../evaluators/custom-evaluators.md) - Build custom evaluators
-- [Examples](../examples.md) - See more examples
+- [Configuration Guide](../guides/configuration) - Learn all configuration options
+- [Python API Reference](../guides/python-api) - Complete API documentation
+- [Custom Evaluators](../evaluators/custom-evaluators) - Build custom evaluators
+- [Examples](../examples) - See more examples
 
 ## Related Documentation
 
-- [CLI Reference](../guides/cli-reference.md) - Command-line usage
-- [Basic Usage](../guides/basic-usage.md) - Quick start guide
-- [Custom Reporters](../reporters/custom-reporters.md) - Build custom reporters
+- [CLI Reference](../guides/cli-reference) - Command-line usage
+- [Basic Usage](../guides/basic-usage) - Quick start guide
+- [Custom Reporters](../reporters/custom-reporters) - Build custom reporters

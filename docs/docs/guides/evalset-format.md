@@ -716,7 +716,7 @@ Reference datasets for benchmarking:
 
 ## Related Documentation
 
-- [Basic Usage](./basic-usage.md)
-- [Configuration Guide](./configuration.md)
-- [CLI Reference](./cli-reference.md)
-- [Examples](../examples.md)
+- [Basic Usage](./basic-usage)
+- [Configuration Guide](./configuration)
+- [CLI Reference](./cli-reference)
+- [Examples](../examples)

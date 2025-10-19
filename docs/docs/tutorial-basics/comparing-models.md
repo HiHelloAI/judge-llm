@@ -341,13 +341,13 @@ Keep other factors constant:
 
 ## Next Steps
 
-- [Configuration Guide](../guides/configuration.md) - Advanced configuration options
-- [Database Reporter](../reporters/database-reporter.md) - Track results over time
-- [Cost Evaluator](../evaluators/cost-evaluator.md) - Budget control
-- [Latency Evaluator](../evaluators/latency-evaluator.md) - Performance testing
+- [Configuration Guide](../guides/configuration) - Advanced configuration options
+- [Database Reporter](../reporters/database-reporter) - Track results over time
+- [Cost Evaluator](../evaluators/cost-evaluator) - Budget control
+- [Latency Evaluator](../evaluators/latency-evaluator) - Performance testing
 
 ## Related Documentation
 
-- [Python API](../guides/python-api.md) - Programmatic analysis
-- [HTML Reporter](../reporters/html-reporter.md) - Visual comparisons
-- [Examples](../examples.md) - More comparison examples
+- [Python API](../guides/python-api) - Programmatic analysis
+- [HTML Reporter](../reporters/html-reporter) - Visual comparisons
+- [Examples](../examples) - More comparison examples

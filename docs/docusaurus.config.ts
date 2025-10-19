@@ -102,7 +102,7 @@ const config: Config = {
             },
             {
               label: 'Quick Start',
-              to: '/docs/quick-start',
+              to: '/docs/tutorial-basics/installation',
             },
             {
               label: 'Examples',
@@ -114,16 +114,16 @@ const config: Config = {
           title: 'Resources',
           items: [
             {
-              label: 'API Reference',
-              to: '/docs/api-reference/evaluate',
+              label: 'User Guides',
+              to: '/docs/guides/basic-usage',
             },
             {
-              label: 'Advanced Guides',
-              to: '/docs/advanced/parallel-execution',
+              label: 'Evaluators',
+              to: '/docs/evaluators/overview',
             },
             {
-              label: 'Contributing',
-              to: '/docs/contributing/development-setup',
+              label: 'Reporters',
+              to: '/docs/reporters/overview',
             },
           ],
         },

@@ -393,11 +393,11 @@ for case in report.test_cases:
 
 ## Related Documentation
 
-- [Evaluators Overview](./overview.md)
-- [Response Evaluator](./response-evaluator.md)
-- [Latency Evaluator](./latency-evaluator.md)
-- [Gemini Provider Costs](../providers/gemini.md#cost-tracking)
+- [Evaluators Overview](./overview)
+- [Response Evaluator](./response-evaluator)
+- [Latency Evaluator](./latency-evaluator)
+- [Gemini Provider Costs](../guides/configuration)
 
 ## API Reference
 
-For implementation details, see the [CostEvaluator API Reference](../api-reference/base-classes.md#costevaluator).
+For implementation details, see the [CostEvaluator API Reference](../guides/python-api).

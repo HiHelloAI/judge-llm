@@ -770,8 +770,8 @@ yamllint test.yaml
 
 ## Related Documentation
 
-- [CLI Reference](./cli-reference.md)
-- [Python API Reference](./python-api.md)
-- [Quick Start](../tutorial-basics/quick-start.md)
-- [Custom Evaluators](../evaluators/custom-evaluators.md)
-- [Custom Reporters](../reporters/custom-reporters.md)
+- [CLI Reference](./cli-reference)
+- [Python API Reference](./python-api)
+- [Quick Start](../tutorial-basics/installation)
+- [Custom Evaluators](../evaluators/custom-evaluators)
+- [Custom Reporters](../reporters/custom-reporters)

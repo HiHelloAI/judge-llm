@@ -234,11 +234,11 @@ Should get 100% pass rate (validates your evalset format).
 
 ## Related Documentation
 
-- [Evaluators Overview](./overview.md)
-- [Trajectory Evaluator](./trajectory-evaluator.md)
-- [Custom Evaluators](./custom-evaluators.md)
-- [Configuration Guide](../guides/configuration.md)
+- [Evaluators Overview](./overview)
+- [Trajectory Evaluator](./trajectory-evaluator)
+- [Custom Evaluators](./custom-evaluators)
+- [Configuration Guide](../guides/configuration)
 
 ## API Reference
 
-For implementation details, see the [ResponseEvaluator API Reference](../api-reference/base-classes.md#responseevaluator).
+For implementation details, see the [ResponseEvaluator API Reference](../guides/python-api).

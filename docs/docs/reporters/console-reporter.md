@@ -278,11 +278,11 @@ judge-llm run --config test.yaml
 
 ## Related Documentation
 
-- [Reporters Overview](./overview.md)
-- [HTML Reporter](./html-reporter.md)
-- [JSON Reporter](./json-reporter.md)
-- [Database Reporter](./database-reporter.md)
+- [Reporters Overview](./overview)
+- [HTML Reporter](./html-reporter)
+- [JSON Reporter](./json-reporter)
+- [Database Reporter](./database-reporter)
 
 ## API Reference
 
-For implementation details, see [ConsoleReporter API](../api-reference/reporters.md#consolereporter).
+For implementation details, see [ConsoleReporter API](../guides/python-api).

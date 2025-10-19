@@ -21,40 +21,40 @@ You've completed the quick start tutorials! Here's where to go from here.
 
 #### 1. Master Configuration
 Learn all configuration options and patterns:
-- [Configuration Guide](../guides/configuration.md) - Complete reference
-- [Default Configs](../guides/default-configs.md) - Reusable defaults
-- [Environment Variables](../guides/environment-variables.md) - Secure config
+- [Configuration Guide](../guides/configuration) - Complete reference
+- [Default Configs](../guides/default-configs) - Reusable defaults
+- [Environment Variables](../guides/environment-variables) - Secure config
 
 #### 2. Explore Evaluators
 Understand different evaluation methods:
-- [Response Evaluator](../evaluators/response-evaluator.md) - LLM-as-judge
-- [Trajectory Evaluator](../evaluators/trajectory-evaluator.md) - Reasoning process
-- [Cost Evaluator](../evaluators/cost-evaluator.md) - Budget control
-- [Latency Evaluator](../evaluators/latency-evaluator.md) - Performance
-- [Custom Evaluators](../evaluators/custom-evaluators.md) - Build your own
+- [Response Evaluator](../evaluators/response-evaluator) - LLM-as-judge
+- [Trajectory Evaluator](../evaluators/trajectory-evaluator) - Reasoning process
+- [Cost Evaluator](../evaluators/cost-evaluator) - Budget control
+- [Latency Evaluator](../evaluators/latency-evaluator) - Performance
+- [Custom Evaluators](../evaluators/custom-evaluators) - Build your own
 
 #### 3. Master Reporters
 Learn about different output formats:
-- [Console Reporter](../reporters/console-reporter.md) - Terminal output
-- [HTML Reporter](../reporters/html-reporter.md) - Interactive reports
-- [JSON Reporter](../reporters/json-reporter.md) - Machine-readable
-- [Database Reporter](../reporters/database-reporter.md) - SQLite storage
-- [Custom Reporters](../reporters/custom-reporters.md) - Build your own
+- [Console Reporter](../reporters/console-reporter) - Terminal output
+- [HTML Reporter](../reporters/html-reporter) - Interactive reports
+- [JSON Reporter](../reporters/json-reporter) - Machine-readable
+- [Database Reporter](../reporters/database-reporter) - SQLite storage
+- [Custom Reporters](../reporters/custom-reporters) - Build your own
 
 ### Explore Examples
 
 Work through real-world examples:
 
-1. **[01-gemini-agent](../../examples/01-gemini-agent/)** - Basic setup
-2. **[02-default-config](../../examples/02-default-config/)** - Using defaults
-3. **[03-custom-evaluator](../../examples/03-custom-evaluator/)** - Custom evaluators
-4. **[04-safety-long-conversation](../../examples/04-safety-long-conversation/)** - Multi-turn
-5. **[05-evaluator-config-override](../../examples/05-evaluator-config-override/)** - Overrides
-6. **[06-database-reporter](../../examples/06-database-reporter/)** - Historical tracking
-7. **[custom_reporter_example](../../examples/custom_reporter_example/)** - CSV reporter
-8. **[default_config_reporters](../../examples/default_config_reporters/)** - Registration
+1. **[01-gemini-agent](../examples/gemini-agent)** - Basic setup
+2. **[02-default-config](../examples/default-config)** - Using defaults
+3. **[03-custom-evaluator](../examples/custom-evaluator)** - Custom evaluators
+4. **[04-safety-evaluation](../examples/safety-evaluation)** - Multi-turn
+5. **[05-config-override](../examples/config-override)** - Overrides
+6. **[06-database-tracking](../examples/database-tracking)** - Historical tracking
+7. **CSV Reporter** - See [Custom Reporters](../reporters/custom-reporters)
+8. **Component Registration** - See [Default Configs](../guides/default-configs)
 
-[View All Examples](../examples.md)
+[View All Examples](../examples/overview)
 
 ## 🚀 Common Next Projects
 
@@ -128,7 +128,7 @@ class MyDomainEvaluator(BaseEvaluator):
         return True
 ```
 
-[Learn More: Custom Evaluators Guide](../evaluators/custom-evaluators.md)
+[Learn More: Custom Evaluators Guide](../evaluators/custom-evaluators)
 
 ### Project 3: Historical Tracking
 
@@ -154,7 +154,7 @@ ORDER BY date DESC
 LIMIT 30;
 ```
 
-[Learn More: Database Reporter](../reporters/database-reporter.md)
+[Learn More: Database Reporter](../reporters/database-reporter)
 
 ### Project 4: Multi-Provider Testing
 
@@ -179,7 +179,7 @@ reporters:
     output_path: ./provider-comparison.html
 ```
 
-[Learn More: Comparing Models](./comparing-models.md)
+[Learn More: Comparing Models](./comparing-models)
 
 ## 🔧 Advanced Topics
 
@@ -212,7 +212,7 @@ reporters:
     webhook_url: ${SLACK_WEBHOOK}
 ```
 
-[Learn More: Default Configs](../guides/default-configs.md)
+[Learn More: Default Configs](../guides/default-configs)
 
 ### Programmatic Workflows
 
@@ -246,34 +246,34 @@ while True:
     time.sleep(60)
 ```
 
-[Learn More: Python API Reference](../guides/python-api.md)
+[Learn More: Python API Reference](../guides/python-api)
 
 ## 📖 Reference Documentation
 
 ### Quick Links
 
-- **[CLI Reference](../guides/cli-reference.md)** - All CLI commands
-- **[Python API](../guides/python-api.md)** - Complete API docs
-- **[Configuration Guide](../guides/configuration.md)** - All config options
-- **[Evalset Format](../guides/evalset-format.md)** - Test case specification
+- **[CLI Reference](../guides/cli-reference)** - All CLI commands
+- **[Python API](../guides/python-api)** - Complete API docs
+- **[Configuration Guide](../guides/configuration)** - All config options
+- **[Evalset Format](../guides/evalset-format)** - Test case specification
 
 ### Component Documentation
 
 **Evaluators:**
-- [Overview](../evaluators/overview.md)
-- [Response](../evaluators/response-evaluator.md)
-- [Trajectory](../evaluators/trajectory-evaluator.md)
-- [Cost](../evaluators/cost-evaluator.md)
-- [Latency](../evaluators/latency-evaluator.md)
-- [Custom](../evaluators/custom-evaluators.md)
+- [Overview](../evaluators/overview)
+- [Response](../evaluators/response-evaluator)
+- [Trajectory](../evaluators/trajectory-evaluator)
+- [Cost](../evaluators/cost-evaluator)
+- [Latency](../evaluators/latency-evaluator)
+- [Custom](../evaluators/custom-evaluators)
 
 **Reporters:**
-- [Overview](../reporters/overview.md)
-- [Console](../reporters/console-reporter.md)
-- [HTML](../reporters/html-reporter.md)
-- [JSON](../reporters/json-reporter.md)
-- [Database](../reporters/database-reporter.md)
-- [Custom](../reporters/custom-reporters.md)
+- [Overview](../reporters/overview)
+- [Console](../reporters/console-reporter)
+- [HTML](../reporters/html-reporter)
+- [JSON](../reporters/json-reporter)
+- [Database](../reporters/database-reporter)
+- [Custom](../reporters/custom-reporters)
 
 ## 🤝 Get Help
 
@@ -289,7 +289,7 @@ Check the troubleshooting sections in:
 1. **API Key Not Found**
    - Check `.env` file exists
    - Verify environment variables are set
-   - See [Environment Variables](../guides/environment-variables.md)
+   - See [Environment Variables](../guides/environment-variables)
 
 2. **Tests Failing**
    - Review evaluator output for reasons
@@ -299,33 +299,33 @@ Check the troubleshooting sections in:
 3. **High Costs**
    - Add cost evaluator with limits
    - Use cheaper models
-   - See [Cost Evaluator](../evaluators/cost-evaluator.md)
+   - See [Cost Evaluator](../evaluators/cost-evaluator)
 
 ## 🎯 Choose Your Path
 
 ### For Application Developers
 Focus on integration and automation:
-1. [Python API Reference](../guides/python-api.md)
-2. [Custom Evaluators](../evaluators/custom-evaluators.md)
-3. [Database Reporter](../reporters/database-reporter.md)
+1. [Python API Reference](../guides/python-api)
+2. [Custom Evaluators](../evaluators/custom-evaluators)
+3. [Database Reporter](../reporters/database-reporter)
 
 ### For QA Engineers
 Focus on testing and validation:
-1. [CLI Reference](../guides/cli-reference.md)
-2. [Evalset Format](../guides/evalset-format.md)
-3. [HTML Reporter](../reporters/html-reporter.md)
+1. [CLI Reference](../guides/cli-reference)
+2. [Evalset Format](../guides/evalset-format)
+3. [HTML Reporter](../reporters/html-reporter)
 
 ### For Data Scientists
 Focus on analysis and comparison:
-1. [Comparing Models](./comparing-models.md)
-2. [Python API](../guides/python-api.md)
-3. [Database Reporter](../reporters/database-reporter.md)
+1. [Comparing Models](./comparing-models)
+2. [Python API](../guides/python-api)
+3. [Database Reporter](../reporters/database-reporter)
 
 ### For DevOps Engineers
 Focus on CI/CD and monitoring:
 1. [CLI Reference](../guides/cli-reference.md#cicd-integration)
-2. [Environment Variables](../guides/environment-variables.md)
-3. [Database Reporter](../reporters/database-reporter.md)
+2. [Environment Variables](../guides/environment-variables)
+3. [Database Reporter](../reporters/database-reporter)
 
 ## 🚀 You're Ready!
 
@@ -340,4 +340,4 @@ You now have all the knowledge to:
 
 ---
 
-*Need more help? Check out the [complete documentation](../intro.md) or explore [examples](../examples.md).*
+*Need more help? Check out the [complete documentation](../intro) or explore [examples](../examples).*

@@ -407,11 +407,11 @@ percentile: 100
 
 ## Related Documentation
 
-- [Evaluators Overview](./overview.md)
-- [Cost Evaluator](./cost-evaluator.md)
-- [Response Evaluator](./response-evaluator.md)
-- [Performance Optimization](../guides/optimization.md)
+- [Evaluators Overview](./overview)
+- [Cost Evaluator](./cost-evaluator)
+- [Response Evaluator](./response-evaluator)
+- [Configuration Guide](../guides/configuration)
 
 ## API Reference
 
-For implementation details, see the [LatencyEvaluator API Reference](../api-reference/base-classes.md#latencyevaluator).
+For implementation details, see the [LatencyEvaluator API Reference](../guides/python-api).

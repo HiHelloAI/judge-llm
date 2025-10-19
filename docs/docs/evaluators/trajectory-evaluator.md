@@ -309,11 +309,11 @@ evaluators:
 
 ## Related Documentation
 
-- [Evaluators Overview](./overview.md)
-- [Response Evaluator](./response-evaluator.md)
-- [Custom Evaluators](./custom-evaluators.md)
-- [Evalset Format](../guides/evalset-format.md)
+- [Evaluators Overview](./overview)
+- [Response Evaluator](./response-evaluator)
+- [Custom Evaluators](./custom-evaluators)
+- [Evalset Format](../guides/evalset-format)
 
 ## API Reference
 
-For implementation details, see the [TrajectoryEvaluator API Reference](../api-reference/base-classes.md#trajectoryevaluator).
+For implementation details, see the [TrajectoryEvaluator API Reference](../guides/python-api).

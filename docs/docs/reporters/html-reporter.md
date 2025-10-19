@@ -243,7 +243,7 @@ reporters:
 
 ## Related Documentation
 
-- [Reporters Overview](./overview.md)
-- [Console Reporter](./console-reporter.md)
-- [JSON Reporter](./json-reporter.md)
-- [Database Reporter](./database-reporter.md)
+- [Reporters Overview](./overview)
+- [Console Reporter](./console-reporter)
+- [JSON Reporter](./json-reporter)
+- [Database Reporter](./database-reporter)

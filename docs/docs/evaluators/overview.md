@@ -21,14 +21,14 @@ An **Evaluator** is a component that:
 
 | Evaluator | Purpose | Key Metrics | Best For |
 |-----------|---------|-------------|----------|
-| **[Response](./response-evaluator.md)** | Response quality | Similarity, exact match | Answer correctness |
-| **[Trajectory](./trajectory-evaluator.md)** | Conversation flow | Turn count, structure | Multi-turn dialogues |
-| **[Cost](./cost-evaluator.md)** | Budget control | Total cost, per-case cost | Cost optimization |
-| **[Latency](./latency-evaluator.md)** | Performance | Response time, timeouts | Speed requirements |
+| **[Response](./response-evaluator)** | Response quality | Similarity, exact match | Answer correctness |
+| **[Trajectory](./trajectory-evaluator)** | Conversation flow | Turn count, structure | Multi-turn dialogues |
+| **[Cost](./cost-evaluator)** | Budget control | Total cost, per-case cost | Cost optimization |
+| **[Latency](./latency-evaluator)** | Performance | Response time, timeouts | Speed requirements |
 
 ### Custom Evaluators
 
-Create [custom evaluators](./custom-evaluators.md) for:
+Create [custom evaluators](./custom-evaluators) for:
 - Domain-specific validation
 - Safety and compliance checks
 - Business rule enforcement
@@ -354,12 +354,12 @@ evaluators:
 
 ## Next Steps
 
-- [Response Evaluator](./response-evaluator.md) - Validate response quality
-- [Trajectory Evaluator](./trajectory-evaluator.md) - Check conversation structure
-- [Cost Evaluator](./cost-evaluator.md) - Control spending
-- [Latency Evaluator](./latency-evaluator.md) - Measure performance
-- [Custom Evaluators](./custom-evaluators.md) - Build your own
+- [Response Evaluator](./response-evaluator) - Validate response quality
+- [Trajectory Evaluator](./trajectory-evaluator) - Check conversation structure
+- [Cost Evaluator](./cost-evaluator) - Control spending
+- [Latency Evaluator](./latency-evaluator) - Measure performance
+- [Custom Evaluators](./custom-evaluators) - Build your own
 
 ## API Reference
 
-For implementation details, see the [BaseEvaluator API Reference](../api-reference/base-classes.md#baseevaluator).
+For implementation details, see the [BaseEvaluator API Reference](../guides/python-api).

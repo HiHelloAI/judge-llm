@@ -674,9 +674,9 @@ def test_csv_reporter():
 
 ## Related Documentation
 
-- [Reporters Overview](./overview.md)
-- [Console Reporter](./console-reporter.md)
-- [JSON Reporter](./json-reporter.md)
-- [HTML Reporter](./html-reporter.md)
-- [Database Reporter](./database-reporter.md)
-- [Custom Evaluators](../evaluators/custom-evaluators.md)
+- [Reporters Overview](./overview)
+- [Console Reporter](./console-reporter)
+- [JSON Reporter](./json-reporter)
+- [HTML Reporter](./html-reporter)
+- [Database Reporter](./database-reporter)
+- [Custom Evaluators](../evaluators/custom-evaluators)

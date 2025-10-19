@@ -542,10 +542,10 @@ def test_length_validator_integration():
 
 ## Related Documentation
 
-- [Evaluators Overview](./overview.md)
-- [Response Evaluator](./response-evaluator.md)
-- [Safety Evaluation Example](../examples/safety-evaluation.md)
-- [Base Classes API](../api-reference/base-classes.md)
+- [Evaluators Overview](./overview)
+- [Response Evaluator](./response-evaluator)
+- [Safety Evaluation Example](../examples/safety-evaluation)
+- [Base Classes API](../guides/python-api)
 
 ## Example Gallery
 

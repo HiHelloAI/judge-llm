@@ -443,16 +443,16 @@ judge-llm run --help
 
 ## Next Steps
 
-- [Configuration Guide](./configuration.md) - Learn all configuration options
-- [CLI Reference](./cli-reference.md) - Complete CLI documentation
-- [Python API](./python-api.md) - Programmatic usage
-- [Examples](../examples.md) - Working examples for common scenarios
-- [Custom Evaluators](../evaluators/custom-evaluators.md) - Build custom evaluators
-- [Custom Reporters](../reporters/custom-reporters.md) - Build custom reporters
+- [Configuration Guide](./configuration) - Learn all configuration options
+- [CLI Reference](./cli-reference) - Complete CLI documentation
+- [Python API](./python-api) - Programmatic usage
+- [Examples](../examples) - Working examples for common scenarios
+- [Custom Evaluators](../evaluators/custom-evaluators) - Build custom evaluators
+- [Custom Reporters](../reporters/custom-reporters) - Build custom reporters
 
 ## Related Documentation
 
-- [CLI Reference](./cli-reference.md)
-- [Python API Reference](./python-api.md)
-- [Configuration Guide](./configuration.md)
-- [Examples](../examples.md)
+- [CLI Reference](./cli-reference)
+- [Python API Reference](./python-api)
+- [Configuration Guide](./configuration)
+- [Examples](../examples)

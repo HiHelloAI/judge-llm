@@ -576,6 +576,6 @@ chmod 644 .env
 
 ## Related Documentation
 
-- [Configuration Guide](./configuration.md)
-- [Basic Usage](./basic-usage.md)
-- [CLI Reference](./cli-reference.md)
+- [Configuration Guide](./configuration)
+- [Basic Usage](./basic-usage)
+- [CLI Reference](./cli-reference)
