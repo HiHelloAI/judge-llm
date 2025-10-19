@@ -21,13 +21,15 @@ Perfect for regression testing, A/B testing providers, and ensuring production-g
 
 ## Key Features
 
-- 🚀 **Multiple Providers** - Gemini, Mock, and custom providers
+- 🚀 **Multiple Providers** - Gemini, Mock, and custom providers with registry-based extensibility
 - 📊 **Built-in Evaluators** - Response similarity, trajectory validation, cost/latency checks
-- 🔌 **Extensible** - Plugin system for custom evaluators and providers
-- 📈 **Rich Reports** - Console tables, interactive HTML dashboard, JSON exports, SQLite database
+- 🔌 **Registry System** - Register custom providers, evaluators, and reporters once, use everywhere
+- 📈 **Rich Reports** - Console tables, interactive HTML dashboard, JSON exports, SQLite database, plus custom reporters
 - ⚡ **Parallel Execution** - Run evaluations concurrently with configurable workers
-- 🛠️ **Config-Driven** - YAML configs with smart defaults or programmatic Python API
+- 🛠️ **Config-Driven** - YAML configs with smart defaults and component registration
 - 🎯 **Per-Test Overrides** - Fine-tune evaluator thresholds per test case
+- 🔐 **Environment Variables** - Auto-loads `.env` for secure API key management
+- 🏢 **Team Standardization** - Share default configs across your organization
 
 ## Quick Example
 
@@ -59,6 +61,53 @@ report = evaluate(
 
 print(f"Success: {report.success_rate:.1%} | Cost: ${report.total_cost:.4f}")
 ```
+
+## Custom Component Registration
+
+Register custom components once and use them by name everywhere:
+
+```yaml
+# .judge_llm.defaults.yaml - Register custom components
+providers:
+  - type: custom
+    module_path: ./my_providers/anthropic.py
+    class_name: AnthropicProvider
+    register_as: anthropic
+
+evaluators:
+  - type: custom
+    module_path: ./my_evaluators/safety.py
+    class_name: SafetyEvaluator
+    register_as: safety
+
+reporters:
+  - type: custom
+    module_path: ./my_reporters/slack.py
+    class_name: SlackReporter
+    register_as: slack
+```
+
+```yaml
+# test.yaml - Use registered components by name
+providers:
+  - type: anthropic
+    agent_id: claude
+
+evaluators:
+  - type: safety
+
+reporters:
+  - type: slack
+    config: {webhook_url: ${SLACK_WEBHOOK}}
+```
+
+**Benefits:**
+- ✅ Register once, use everywhere (DRY principle)
+- ✅ Team standardization across projects
+- ✅ Clean, simple test configs
+- ✅ Easy to update implementations
+
+Learn more in the [Providers](./providers/custom-providers.md), [Evaluators](./evaluators/custom-evaluators.md), and [Reporters](./reporters/overview.md) documentation.
 
 ## Use Cases
 
