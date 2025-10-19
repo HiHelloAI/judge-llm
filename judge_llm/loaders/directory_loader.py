@@ -1,6 +1,7 @@
 """Directory loader for eval sets"""
 
 import json
+import yaml
 from pathlib import Path
 from typing import List
 from judge_llm.core.models import EvalSet
@@ -9,14 +10,14 @@ from judge_llm.utils.logger import get_logger
 
 
 class DirectoryLoader(BaseLoader):
-    """Load eval sets from all JSON files in a directory"""
+    """Load eval sets from all JSON or YAML files in a directory"""
 
     def __init__(self, directory_path: str, pattern: str = "*.json"):
         """Initialize directory loader
 
         Args:
             directory_path: Path to the directory containing eval set files
-            pattern: File pattern to match (default: *.json)
+            pattern: File pattern to match (default: *.json). Use *.yaml or *.yml for YAML files.
         """
         self.directory_path = Path(directory_path).expanduser().resolve()
         self.pattern = pattern
@@ -57,9 +58,19 @@ class DirectoryLoader(BaseLoader):
                 self.logger.debug(f"Loading eval set from {file_path}")
 
                 with open(file_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+                    # Determine file format based on extension
+                    if file_path.suffix.lower() in [".yaml", ".yml"]:
+                        data = yaml.safe_load(f)
+                    elif file_path.suffix.lower() == ".json":
+                        data = json.load(f)
+                    else:
+                        # Default to JSON for backward compatibility
+                        self.logger.warning(
+                            f"Unknown file extension '{file_path.suffix}', attempting to parse as JSON"
+                        )
+                        data = json.load(f)
 
-                # Parse JSON data into EvalSet model
+                # Parse data into EvalSet model
                 eval_set = EvalSet(**data)
                 eval_sets.append(eval_set)
 
@@ -67,8 +78,8 @@ class DirectoryLoader(BaseLoader):
                     f"Loaded eval set '{eval_set.name}' with {len(eval_set.eval_cases)} cases from {file_path.name}"
                 )
 
-            except json.JSONDecodeError as e:
-                self.logger.error(f"Invalid JSON in file {file_path}: {e}")
+            except (json.JSONDecodeError, yaml.YAMLError) as e:
+                self.logger.error(f"Invalid file format in file {file_path}: {e}")
                 continue
             except Exception as e:
                 self.logger.error(f"Error loading eval set from {file_path}: {e}")

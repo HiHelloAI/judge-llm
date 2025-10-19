@@ -1,6 +1,7 @@
 """Unit tests for dataset loaders."""
 
 import json
+import yaml
 import tempfile
 from pathlib import Path
 import pytest
@@ -199,6 +200,152 @@ class TestLocalFileLoader:
         # Should be the same object (cached)
         assert eval_sets1 is eval_sets2
 
+    def test_load_valid_yaml_file(self, temp_dir):
+        """Test loading valid YAML evaluation set."""
+        eval_set_data = {
+            "eval_set_id": "yaml_set_1",
+            "name": "yaml_test_set",
+            "description": "YAML Test evaluation set",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": [
+                {
+                    "eval_id": "case_1",
+                    "conversation": [],
+                    "session_input": {
+                        "app_name": "test",
+                        "user_id": "user1"
+                    },
+                    "creation_timestamp": 1234567890.0
+                },
+                {
+                    "eval_id": "case_2",
+                    "conversation": [],
+                    "session_input": {
+                        "app_name": "test",
+                        "user_id": "user2"
+                    },
+                    "creation_timestamp": 1234567890.0
+                }
+            ]
+        }
+
+        file_path = temp_dir / "test.yaml"
+        with open(file_path, "w") as f:
+            yaml.dump(eval_set_data, f)
+
+        loader = LocalFileLoader(str(file_path))
+        eval_sets = loader.load()
+
+        assert eval_sets is not None
+        assert len(eval_sets) == 1
+        assert eval_sets[0].name == "yaml_test_set"
+        assert len(eval_sets[0].eval_cases) == 2
+
+    def test_load_valid_yml_file(self, temp_dir):
+        """Test loading valid .yml evaluation set (alternative YAML extension)."""
+        eval_set_data = {
+            "eval_set_id": "yml_set_1",
+            "name": "yml_test_set",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": []
+        }
+
+        file_path = temp_dir / "test.yml"
+        with open(file_path, "w") as f:
+            yaml.dump(eval_set_data, f)
+
+        loader = LocalFileLoader(str(file_path))
+        eval_sets = loader.load()
+
+        assert len(eval_sets) == 1
+        assert eval_sets[0].name == "yml_test_set"
+
+    def test_load_invalid_yaml(self, temp_dir):
+        """Test loading invalid YAML file."""
+        file_path = temp_dir / "invalid.yaml"
+        with open(file_path, "w") as f:
+            f.write("{ invalid: yaml: content: here")
+
+        loader = LocalFileLoader(str(file_path))
+
+        with pytest.raises(yaml.YAMLError):
+            loader.load()
+
+    def test_load_yaml_with_complex_conversation(self, temp_dir):
+        """Test loading YAML eval set with complex conversation history."""
+        eval_set_data = {
+            "eval_set_id": "yaml_complex",
+            "name": "complex_yaml_test",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": [
+                {
+                    "eval_id": "case1",
+                    "session_input": {"app_name": "test", "user_id": "user1"},
+                    "creation_timestamp": 1234567890.0,
+                    "conversation": [
+                        {
+                            "invocation_id": "inv1",
+                            "user_content": {
+                                "role": "user",
+                                "parts": [{"text": "What is the weather?"}]
+                            },
+                            "final_response": {
+                                "role": "model",
+                                "parts": [{"text": "It's sunny today!"}]
+                            },
+                            "intermediate_data": {
+                                "tool_uses": [],
+                                "intermediate_responses": []
+                            },
+                            "creation_timestamp": 1234567890.0
+                        }
+                    ]
+                }
+            ]
+        }
+
+        file_path = temp_dir / "complex.yaml"
+        with open(file_path, "w") as f:
+            yaml.dump(eval_set_data, f)
+
+        loader = LocalFileLoader(str(file_path))
+        eval_sets = loader.load()
+
+        assert len(eval_sets) == 1
+        assert len(eval_sets[0].eval_cases) == 1
+        assert len(eval_sets[0].eval_cases[0].conversation) == 1
+
+    def test_load_yaml_with_evaluator_config(self, temp_dir):
+        """Test loading YAML eval set with per-case evaluator config."""
+        eval_set_data = {
+            "eval_set_id": "yaml_config",
+            "name": "yaml_config_test",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": [
+                {
+                    "eval_id": "case1",
+                    "session_input": {"app_name": "test", "user_id": "user1"},
+                    "creation_timestamp": 1234567890.0,
+                    "conversation": [],
+                    "evaluator_config": {
+                        "response": {
+                            "threshold": 0.85
+                        }
+                    }
+                }
+            ]
+        }
+
+        file_path = temp_dir / "config.yaml"
+        with open(file_path, "w") as f:
+            yaml.dump(eval_set_data, f)
+
+        loader = LocalFileLoader(str(file_path))
+        eval_sets = loader.load()
+
+        assert eval_sets[0].eval_cases[0].evaluator_config is not None
+        assert eval_sets[0].eval_cases[0].evaluator_config["response"]["threshold"] == 0.85
+
 
 class TestDirectoryLoader:
     """Test DirectoryLoader class."""
@@ -373,3 +520,112 @@ class TestDirectoryLoader:
         # Cleanup
         loader.cleanup()
         assert loader._cache is None
+
+    def test_load_directory_with_yaml_files(self, temp_dir):
+        """Test loading multiple YAML files from directory."""
+        # Create multiple YAML files
+        for i in range(3):
+            eval_set_data = {
+                "eval_set_id": f"yaml_set{i}",
+                "name": f"yaml_test_set_{i}",
+                "creation_timestamp": 1234567890.0,
+                "eval_cases": [
+                    {
+                        "eval_id": f"case_{i}",
+                        "conversation": [],
+                        "session_input": {"app_name": "test", "user_id": f"user{i}"},
+                        "creation_timestamp": 1234567890.0
+                    }
+                ]
+            }
+
+            file_path = temp_dir / f"test{i}.yaml"
+            with open(file_path, "w") as f:
+                yaml.dump(eval_set_data, f)
+
+        loader = DirectoryLoader(str(temp_dir), pattern="*.yaml")
+        eval_sets = loader.load()
+
+        assert len(eval_sets) == 3
+        assert all(eval_set.name.startswith("yaml_test_set_") for eval_set in eval_sets)
+
+    def test_load_directory_with_mixed_json_yaml(self, temp_dir):
+        """Test loading directory with both JSON and YAML files."""
+        # Create JSON file
+        json_data = {
+            "eval_set_id": "json_set",
+            "name": "json_test_set",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": []
+        }
+        json_path = temp_dir / "test.json"
+        with open(json_path, "w") as f:
+            json.dump(json_data, f)
+
+        # Create YAML file
+        yaml_data = {
+            "eval_set_id": "yaml_set",
+            "name": "yaml_test_set",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": []
+        }
+        yaml_path = temp_dir / "test.yaml"
+        with open(yaml_path, "w") as f:
+            yaml.dump(yaml_data, f)
+
+        # Test loading only JSON files
+        json_loader = DirectoryLoader(str(temp_dir), pattern="*.json")
+        json_sets = json_loader.load()
+        assert len(json_sets) == 1
+        assert json_sets[0].name == "json_test_set"
+
+        # Test loading only YAML files
+        yaml_loader = DirectoryLoader(str(temp_dir), pattern="*.yaml")
+        yaml_sets = yaml_loader.load()
+        assert len(yaml_sets) == 1
+        assert yaml_sets[0].name == "yaml_test_set"
+
+    def test_load_directory_yml_extension(self, temp_dir):
+        """Test loading directory with .yml extension files."""
+        # Create YML files
+        for i in range(2):
+            eval_set_data = {
+                "eval_set_id": f"yml_set{i}",
+                "name": f"yml_test_{i}",
+                "creation_timestamp": 1234567890.0,
+                "eval_cases": []
+            }
+
+            file_path = temp_dir / f"test{i}.yml"
+            with open(file_path, "w") as f:
+                yaml.dump(eval_set_data, f)
+
+        loader = DirectoryLoader(str(temp_dir), pattern="*.yml")
+        eval_sets = loader.load()
+
+        assert len(eval_sets) == 2
+
+    def test_load_directory_with_invalid_yaml(self, temp_dir):
+        """Test loading directory with some invalid YAML files."""
+        # Create valid YAML
+        valid_data = {
+            "eval_set_id": "valid_set",
+            "name": "valid_yaml",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": []
+        }
+        valid_path = temp_dir / "valid.yaml"
+        with open(valid_path, "w") as f:
+            yaml.dump(valid_data, f)
+
+        # Create invalid YAML
+        invalid_path = temp_dir / "invalid.yaml"
+        with open(invalid_path, "w") as f:
+            f.write("{ invalid: yaml: content")
+
+        loader = DirectoryLoader(str(temp_dir), pattern="*.yaml")
+        eval_sets = loader.load()
+
+        # Should load only valid files (invalid files are skipped with warning)
+        assert len(eval_sets) == 1
+        assert eval_sets[0].name == "valid_yaml"

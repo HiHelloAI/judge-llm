@@ -1,0 +1,54 @@
+eval_set_id: gemini_news_assistant_v1
+name: News Assistant Evaluation - Gemini
+description: Test cases for evaluating Gemini-powered news assistant
+creation_timestamp: 1704067000.0
+eval_cases:
+  - eval_id: gemini_news_001
+    conversation:
+      - invocation_id: test-001
+        user_content:
+          parts:
+            - text: What are the top technology news stories today?
+          role: user
+        final_response:
+          parts:
+            - text: |
+                Here are the top technology news stories:
+                1. AI advances in healthcare diagnostics
+                2. New quantum computing breakthrough announced
+                3. Tech giants announce sustainability initiatives
+          role: null
+        intermediate_data:
+          tool_uses: []
+          intermediate_responses: []
+        creation_timestamp: 1704067200.0
+    session_input:
+      app_name: news_assistant
+      user_id: test_user
+      state: {}
+      user_prompt: What are the top technology news stories today?
+      system_instruction: You are a helpful news assistant that provides accurate, concise summaries of current events.
+    creation_timestamp: 1704067200.0
+
+  - eval_id: gemini_news_002
+    conversation:
+      - invocation_id: test-002
+        user_content:
+          parts:
+            - text: Can you explain what quantum computing is in simple terms?
+          role: user
+        final_response:
+          parts:
+            - text: Quantum computing is a new type of computing that uses quantum mechanics principles. Unlike regular computers that use bits (0s and 1s), quantum computers use qubits that can be both 0 and 1 at the same time. This allows them to solve certain complex problems much faster than traditional computers.
+          role: null
+        intermediate_data:
+          tool_uses: []
+          intermediate_responses: []
+        creation_timestamp: 1704067300.0
+    session_input:
+      app_name: news_assistant
+      user_id: test_user
+      state: {}
+      user_prompt: Can you explain what quantum computing is in simple terms?
+      system_instruction: You are a helpful news assistant that provides accurate, concise summaries of current events. When explaining technical topics, use simple language that anyone can understand.
+    creation_timestamp: 1704067300.0

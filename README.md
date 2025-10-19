@@ -89,8 +89,8 @@ The `.env` file is automatically loaded when you import the library or run the C
 # Run evaluation from config file
 judge-llm run --config config.yaml
 
-# Run with inline arguments
-judge-llm run --dataset ./data/eval.json --provider mock --agent-id my_agent --report html --output report.html
+# Run with inline arguments (supports .json, .yaml, or .yml)
+judge-llm run --dataset ./data/eval.yaml --provider mock --agent-id my_agent --report html --output report.html
 
 # Validate configuration
 judge-llm validate --config config.yaml
@@ -112,9 +112,9 @@ from judge_llm import evaluate
 # From config file
 report = evaluate(config="config.yaml")
 
-# Programmatic API
+# Programmatic API (supports .json, .yaml, or .yml datasets)
 report = evaluate(
-    dataset={"loader": "local_file", "paths": ["./data/eval.json"]},
+    dataset={"loader": "local_file", "paths": ["./data/eval.yaml"]},
     providers=[{"type": "mock", "agent_id": "my_agent"}],
     evaluators=[{"type": "response_evaluator", "config": {"similarity_threshold": 0.8}}],
     reporters=[{"type": "console"}, {"type": "html", "output_path": "./report.html"}]
@@ -129,7 +129,7 @@ print(f"Success: {report.success_rate:.1%} | Cost: ${report.total_cost:.4f}")
 ```yaml
 dataset:
   loader: local_file
-  paths: [./data/eval.json]
+  paths: [./data/eval.json]  # Supports .json, .yaml, or .yml files
 
 providers:
   - type: gemini
@@ -144,6 +144,35 @@ reporters:
   - type: console
   - type: html
     output_path: ./report.html
+```
+
+**Dataset File Formats:**
+
+JUDGE LLM supports both JSON and YAML formats for evaluation datasets. Use whichever format you prefer:
+
+```yaml
+# Using JSON dataset
+dataset:
+  loader: local_file
+  paths: [./data/eval.json]
+
+# Using YAML dataset
+dataset:
+  loader: local_file
+  paths: [./data/eval.yaml]
+
+# Using multiple datasets (mixed formats)
+dataset:
+  loader: local_file
+  paths:
+    - ./data/eval1.json
+    - ./data/eval2.yaml
+
+# Using directory loader with pattern
+dataset:
+  loader: directory
+  paths: [./data]
+  pattern: "*.yaml"  # or "*.json" or "*.yml"
 ```
 
 See the [examples/](examples/) directory for complete configuration examples including default configs, custom evaluators, and advanced features.

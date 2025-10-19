@@ -1,6 +1,7 @@
 """Local file loader for eval sets"""
 
 import json
+import yaml
 from pathlib import Path
 from typing import List
 from judge_llm.core.models import EvalSet
@@ -9,13 +10,13 @@ from judge_llm.utils.logger import get_logger
 
 
 class LocalFileLoader(BaseLoader):
-    """Load eval sets from local JSON files"""
+    """Load eval sets from local JSON or YAML files"""
 
     def __init__(self, file_path: str):
         """Initialize local file loader
 
         Args:
-            file_path: Path to the JSON eval set file
+            file_path: Path to the JSON or YAML eval set file
         """
         self.file_path = Path(file_path).expanduser().resolve()
         self.logger = get_logger()
@@ -35,9 +36,19 @@ class LocalFileLoader(BaseLoader):
 
         try:
             with open(self.file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+                # Determine file format based on extension
+                if self.file_path.suffix.lower() in [".yaml", ".yml"]:
+                    data = yaml.safe_load(f)
+                elif self.file_path.suffix.lower() == ".json":
+                    data = json.load(f)
+                else:
+                    # Default to JSON for backward compatibility
+                    self.logger.warning(
+                        f"Unknown file extension '{self.file_path.suffix}', attempting to parse as JSON"
+                    )
+                    data = json.load(f)
 
-            # Parse JSON data into EvalSet model
+            # Parse data into EvalSet model
             eval_set = EvalSet(**data)
             self._cache = [eval_set]
 
@@ -50,8 +61,8 @@ class LocalFileLoader(BaseLoader):
         except FileNotFoundError:
             self.logger.error(f"Eval set file not found: {self.file_path}")
             raise
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Invalid JSON in eval set file: {e}")
+        except (json.JSONDecodeError, yaml.YAMLError) as e:
+            self.logger.error(f"Invalid file format in eval set file: {e}")
             raise
         except Exception as e:
             self.logger.error(f"Error loading eval set: {e}")

@@ -12,7 +12,8 @@ This example demonstrates the most basic usage of Judge LLM - evaluating a Gemin
 ## Files
 
 - `config.yaml` - Basic configuration file
-- `sample.evalset.json` - Sample test cases
+- `sample.evalset.json` - Sample test cases (JSON format)
+- `sample.evalset.yaml` - Sample test cases (YAML format)
 - `run.sh` - Shell script to run evaluation
 - `run_evaluation.py` - Python script to run evaluation
 - `README.md` - This file
@@ -42,7 +43,7 @@ echo "GEMINI_API_KEY=your_key" > .env
 dataset:
   loader: local_file
   paths:
-    - ./sample.evalset.json
+    - ./sample.evalset.json  # or ./sample.evalset.yaml
 
 providers:
   - type: gemini
@@ -59,7 +60,7 @@ reporters:
 ```
 
 This configuration:
-- Loads test cases from `sample.evalset.json`
+- Loads test cases from `sample.evalset.json` (or `sample.evalset.yaml` - both formats supported)
 - Uses Gemini Flash model with temperature 0 (deterministic)
 - Evaluates responses using LLM-as-judge
 - Outputs results to console
