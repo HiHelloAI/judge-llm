@@ -1,0 +1,29 @@
+# Example: Using custom reporter via configuration file
+
+agent:
+  log_level: INFO
+  num_runs: 1
+
+dataset:
+  loader: local_file
+  paths:
+    - ../../tests/data/simple_evalset.json
+
+providers:
+  - type: mock
+    agent_id: mock_agent
+
+evaluators:
+  - type: response_evaluator
+    enabled: true
+
+reporters:
+  # Built-in reporters
+  - type: console
+  
+  # Custom CSV reporter via config
+  - type: custom
+    module_path: ./custom_reporter.py
+    class_name: CSVReporter
+    config:
+      output_path: ./results.csv

@@ -5,7 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from judge_llm.core.evaluate import evaluate
 from judge_llm.core.config_validator import get_validator
-from judge_llm.core.registry import get_provider_registry, get_evaluator_registry
+from judge_llm.core.registry import get_provider_registry, get_evaluator_registry, get_reporter_registry
 from judge_llm.utils.logger import get_logger, set_log_level
 import yaml
 
@@ -88,7 +88,7 @@ def main():
 @click.option(
     "--report",
     "-r",
-    type=click.Choice(["console", "json", "html"], case_sensitive=False),
+    type=click.Choice(["console", "json", "html", "database"], case_sensitive=False),
     multiple=True,
     default=["console"],
     help="Report types to generate",
@@ -219,9 +219,9 @@ def validate(config):
 
 
 @main.command()
-@click.argument("entity", type=click.Choice(["providers", "evaluators"], case_sensitive=False))
+@click.argument("entity", type=click.Choice(["providers", "evaluators", "reporters"], case_sensitive=False))
 def list(entity):
-    """List available providers or evaluators"""
+    """List available providers, evaluators, or reporters"""
     set_log_level("WARNING")  # Suppress most logs for list command
 
     if entity.lower() == "providers":
@@ -243,6 +243,17 @@ def list(entity):
         if evaluators:
             for evaluator in sorted(evaluators):
                 click.echo(f"  - {evaluator}")
+        else:
+            click.echo("  (none)")
+
+    elif entity.lower() == "reporters":
+        registry = get_reporter_registry()
+        reporters = registry.list_reporters()
+
+        click.echo("\nAvailable Reporters:")
+        if reporters:
+            for reporter in sorted(reporters):
+                click.echo(f"  - {reporter}")
         else:
             click.echo("  (none)")
 

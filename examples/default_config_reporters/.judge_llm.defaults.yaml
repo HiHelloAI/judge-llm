@@ -1,0 +1,45 @@
+# Default Configuration with Custom Reporter Registration
+# 
+# This file demonstrates registering custom reporters in your defaults
+# so they can be used by name in your actual test configs.
+#
+# Place this file in your project root as .judge_llm.defaults.yaml
+# or in ~/.judge_llm/defaults.yaml
+
+# Register custom reporters here
+reporters:
+  # Register a custom CSV reporter
+  - type: custom
+    module_path: ./reporters/csv_reporter.py
+    class_name: CSVReporter
+    register_as: csv  # Now you can use "type: csv" in your test configs!
+    
+  # Register a custom Slack reporter
+  - type: custom
+    module_path: ./reporters/slack_reporter.py
+    class_name: SlackReporter
+    register_as: slack  # Now you can use "type: slack" in your test configs!
+    
+  # Register a custom metrics reporter
+  - type: custom
+    module_path: ./reporters/metrics_reporter.py
+    class_name: MetricsReporter
+    register_as: metrics
+
+# Default agent settings
+agent:
+  log_level: INFO
+  num_runs: 1
+  parallel_execution: false
+
+# Default evaluators
+evaluators:
+  - type: response_evaluator
+    enabled: true
+    config:
+      similarity_threshold: 0.8
+      
+  - type: cost_evaluator
+    enabled: true
+    config:
+      max_cost_per_case: 0.10

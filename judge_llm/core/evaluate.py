@@ -14,7 +14,7 @@ from judge_llm.core.models import (
 )
 from judge_llm.core.config_validator import get_validator
 from judge_llm.core.config_loader import get_loader
-from judge_llm.core.registry import get_provider_registry, get_evaluator_registry
+from judge_llm.core.registry import get_provider_registry, get_evaluator_registry, get_reporter_registry
 from judge_llm.loaders.base import BaseLoader
 from judge_llm.loaders.local_file_loader import LocalFileLoader
 from judge_llm.loaders.directory_loader import DirectoryLoader
@@ -208,6 +208,9 @@ def _load_config(
 def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> EvaluationReport:
     """Execute evaluation from configuration dictionary"""
     logger = get_logger()
+
+    # Register custom reporters from config reporters section (if any)
+    _process_reporter_registrations(config)
 
     # Validate configuration
     if validate:
@@ -419,24 +422,51 @@ def _initialize_evaluators(evaluators_config: List[Dict[str, Any]]) -> List[Base
 
 def _initialize_reporters(reporters_config: List[Dict[str, Any]]) -> List[BaseReporter]:
     """Initialize reporters from configuration"""
+    logger = get_logger()
     reporters = []
+    reporter_registry = get_reporter_registry()
 
     for reporter_config in reporters_config:
         reporter_type = reporter_config.get("type")
-
+        
+        # Check for custom reporter
+        if reporter_type == "custom":
+            module_path = reporter_config.get("module_path")
+            class_name = reporter_config.get("class_name")
+            
+            if not module_path or not class_name:
+                raise ValueError(
+                    "Custom reporter requires 'module_path' and 'class_name' in configuration"
+                )
+            
+            # Load custom reporter
+            reporter_class = reporter_registry.load_custom_reporter(module_path, class_name)
+        else:
+            # Get reporter from registry
+            reporter_class = reporter_registry.get(reporter_type)
+            
+            if not reporter_class:
+                raise ValueError(f"Unknown reporter type: {reporter_type}")
+        
+        # Initialize reporter based on type
         if reporter_type == "console":
-            reporters.append(ConsoleReporter())
+            reporter = reporter_class()
         elif reporter_type == "json":
             output_path = reporter_config.get("output_path", "./report.json")
-            reporters.append(JSONReporter(output_path))
+            reporter = reporter_class(output_path)
         elif reporter_type == "html":
             output_path = reporter_config.get("output_path", "./report.html")
-            reporters.append(HTMLReporter(output_path))
+            reporter = reporter_class(output_path)
         elif reporter_type == "database":
             db_path = reporter_config.get("db_path", "./judge_llm_results.db")
-            reporters.append(DatabaseReporter(db_path))
+            reporter = reporter_class(db_path)
+        elif reporter_type == "custom":
+            # Custom reporters should accept config dict
+            reporter = reporter_class(config=reporter_config.get("config", {}))
         else:
             raise ValueError(f"Unknown reporter type: {reporter_type}")
+        
+        reporters.append(reporter)
 
     return reporters
 
@@ -576,3 +606,61 @@ def _generate_report(execution_runs: List[ExecutionRun]) -> EvaluationReport:
             "failed_executions": len(execution_runs) - success_count,
         },
     )
+
+
+def _process_reporter_registrations(config: Dict[str, Any]):
+    """Process reporter registrations from config
+    
+    This allows registering custom reporters in default config that can be
+    referenced by name in actual configs.
+    
+    In default config:
+        reporters:
+          - type: custom
+            module_path: ./my_reporters/csv_reporter.py
+            class_name: CSVReporter
+            register_as: csv  # Register this reporter globally
+            
+    In actual config:
+        reporters:
+          - type: csv  # Use the registered reporter
+            config:
+              output_path: ./results.csv
+    
+    Args:
+        config: Configuration dictionary
+    """
+    logger = get_logger()
+    reporter_registry = get_reporter_registry()
+    
+    reporters_config = config.get("reporters", [])
+    
+    for reporter_config in reporters_config:
+        # Check if this is a custom reporter that should be registered
+        if reporter_config.get("type") == "custom" and "register_as" in reporter_config:
+            register_as = reporter_config.get("register_as")
+            module_path = reporter_config.get("module_path")
+            class_name = reporter_config.get("class_name")
+            
+            if not module_path or not class_name:
+                logger.warning(
+                    f"Cannot register reporter '{register_as}': missing module_path or class_name"
+                )
+                continue
+            
+            # Check if already registered
+            if reporter_registry.has(register_as):
+                logger.debug(f"Reporter '{register_as}' already registered, skipping")
+                continue
+            
+            try:
+                # Load the custom reporter class
+                reporter_class = reporter_registry.load_custom_reporter(module_path, class_name)
+                
+                # Register it with the specified name
+                reporter_registry.register(register_as, reporter_class)
+                
+                logger.info(f"✓ Registered custom reporter '{register_as}' from {module_path}")
+                
+            except Exception as e:
+                logger.warning(f"Failed to register reporter '{register_as}': {e}")

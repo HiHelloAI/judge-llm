@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from judge_llm.core.evaluate import evaluate
-from judge_llm.core.registry import register_evaluator, register_provider
+from judge_llm.core.registry import register_evaluator, register_provider, register_reporter
 from judge_llm.loaders.base import BaseLoader
 from judge_llm.providers.base import BaseProvider
 from judge_llm.evaluators.base import BaseEvaluator
@@ -18,6 +18,7 @@ __all__ = [
     "evaluate",
     "register_evaluator",
     "register_provider",
+    "register_reporter",
     "BaseLoader",
     "BaseProvider",
     "BaseEvaluator",
