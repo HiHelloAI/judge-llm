@@ -22,45 +22,53 @@ Judge LLM is a lightweight, extensible Python framework designed to systematical
 
 Judge LLM follows a modular, registry-based architecture with clear separation of concerns:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Judge LLM Framework                      │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
-│  │   Providers  │  │  Evaluators  │  │   Reporters  │         │
-│  │              │  │              │  │              │         │
-│  │ • Gemini     │  │ • Response   │  │ • Console    │         │
-│  │ • OpenAI     │  │ • Trajectory │  │ • HTML       │         │
-│  │ • Anthropic  │  │ • Cost       │  │ • JSON       │         │
-│  │ • Mock       │  │ • Latency    │  │ • Database   │         │
-│  │ • Custom     │  │ • Custom     │  │ • Custom     │         │
-│  └──────────────┘  └──────────────┘  └──────────────┘         │
-│          │                 │                  │                 │
-│          └─────────────────┼──────────────────┘                 │
-│                            │                                    │
-│                   ┌────────▼────────┐                          │
-│                   │  Registry Core  │                          │
-│                   │                 │                          │
-│                   │ • Component     │                          │
-│                   │   Registration  │                          │
-│                   │ • Lifecycle     │                          │
-│                   │   Management    │                          │
-│                   │ • Configuration │                          │
-│                   └────────┬────────┘                          │
-│                            │                                    │
-│              ┌─────────────┼─────────────┐                     │
-│              │             │             │                     │
-│     ┌────────▼──────┐  ┌──▼───────┐  ┌─▼──────────┐          │
-│     │ Config Loader │  │ Evaluator│  │  Reporter  │          │
-│     │               │  │ Engine   │  │  Engine    │          │
-│     │ • YAML Parse  │  │          │  │            │          │
-│     │ • Env Vars    │  │ • Execute│  │ • Format   │          │
-│     │ • Merge       │  │ • Collect│  │ • Output   │          │
-│     │ • Validate    │  │ • Report │  │ • Store    │          │
-│     └───────────────┘  └──────────┘  └────────────┘          │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "Judge LLM Framework"
+        subgraph "Component Layer"
+            P[Providers<br/>Gemini, OpenAI, Mock, Custom]
+            E[Evaluators<br/>Response, Trajectory, Cost, Latency]
+            R[Reporters<br/>Console, HTML, JSON, Database]
+        end
+
+        subgraph "Core Layer"
+            REG[Registry Core<br/>Component Registration<br/>Lifecycle Management]
+            CONFIG[Config Loader<br/>YAML/JSON Parse<br/>Env Variables<br/>Validation]
+            EVAL_ENG[Evaluator Engine<br/>Execute & Collect]
+            REP_ENG[Reporter Engine<br/>Format & Output]
+        end
+
+        subgraph "Data Layer"
+            DS[Dataset Loader<br/>JSON/YAML Support<br/>Local File/Directory]
+            DB[(SQLite Database<br/>Historical Results)]
+        end
+
+        P --> REG
+        E --> REG
+        R --> REG
+
+        CONFIG --> REG
+        DS --> REG
+
+        REG --> EVAL_ENG
+        REG --> REP_ENG
+
+        EVAL_ENG --> REP_ENG
+        REP_ENG --> DB
+    end
+
+    USER[User/CLI] --> CONFIG
+    CONFIG --> DS
+
+    style P fill:#e1f5ff
+    style E fill:#e1f5ff
+    style R fill:#e1f5ff
+    style REG fill:#fff4e1
+    style CONFIG fill:#fff4e1
+    style EVAL_ENG fill:#fff4e1
+    style REP_ENG fill:#fff4e1
+    style DS fill:#f0f0f0
+    style DB fill:#f0f0f0
 ```
 
 ## Key Components
@@ -224,49 +232,59 @@ providers:
 
 ### Evaluation Execution Flow
 
-```
-1. Configuration Loading
-   ├── Load test config (config.yaml)
-   ├── Load project defaults (.judge_llm.defaults.yaml)
-   ├── Load environment variables (.env)
-   ├── Merge configurations (deep merge)
-   └── Validate configuration schema
+```mermaid
+sequenceDiagram
+    participant User
+    participant CLI
+    participant ConfigLoader
+    participant Registry
+    participant DataLoader
+    participant Provider
+    participant Evaluator
+    participant Reporter
 
-2. Component Initialization
-   ├── Instantiate providers from registry
-   ├── Instantiate evaluators from registry
-   ├── Instantiate reporters from registry
-   └── Inject configurations into components
+    User->>CLI: judge-llm run --config config.yaml
+    CLI->>ConfigLoader: Load configuration
 
-3. Test Case Loading
-   ├── Load evalset file(s)
-   ├── Parse test cases
-   ├── Validate test case format
-   └── Apply per-test configuration overrides
+    ConfigLoader->>ConfigLoader: Load config.yaml
+    ConfigLoader->>ConfigLoader: Load .judge_llm.defaults.yaml
+    ConfigLoader->>ConfigLoader: Load .env variables
+    ConfigLoader->>ConfigLoader: Merge & validate configs
+    ConfigLoader-->>CLI: Configuration ready
 
-4. Execution (for each test case)
-   ├── Send prompt to provider
-   ├── Receive response from LLM
-   ├── Run all evaluators
-   │   ├── Response Evaluator
-   │   ├── Trajectory Evaluator
-   │   ├── Cost Evaluator
-   │   ├── Latency Evaluator
-   │   └── Custom Evaluators
-   └── Collect results
+    CLI->>Registry: Register components
+    Registry->>Registry: Register providers
+    Registry->>Registry: Register evaluators
+    Registry->>Registry: Register reporters
+    Registry-->>CLI: Components registered
 
-5. Reporting
-   ├── Aggregate all test results
-   ├── Calculate summary statistics
-   ├── Format results per reporter
-   │   ├── Console (real-time)
-   │   ├── HTML (dashboard)
-   │   ├── JSON (structured)
-   │   └── Database (historical)
-   └── Output to all reporters
+    CLI->>DataLoader: Load datasets
+    DataLoader->>DataLoader: Load JSON/YAML files
+    DataLoader->>DataLoader: Parse evalsets
+    DataLoader-->>CLI: Test cases loaded
 
-6. Cleanup
-   └── Close connections, clean up resources
+    loop For each test case
+        CLI->>Provider: Execute test case
+        Provider->>Provider: Send to LLM API
+        Provider-->>CLI: Response received
+
+        CLI->>Evaluator: Run evaluators
+        Evaluator->>Evaluator: Response evaluation
+        Evaluator->>Evaluator: Trajectory evaluation
+        Evaluator->>Evaluator: Cost evaluation
+        Evaluator->>Evaluator: Latency evaluation
+        Evaluator-->>CLI: Evaluation results
+    end
+
+    CLI->>Reporter: Generate reports
+    Reporter->>Reporter: Console output
+    Reporter->>Reporter: HTML dashboard
+    Reporter->>Reporter: JSON export
+    Reporter->>Reporter: Database storage
+    Reporter-->>User: Reports generated
+
+    CLI->>CLI: Cleanup resources
+    CLI-->>User: Evaluation complete
 ```
 
 ### Test Case Structure
@@ -310,6 +328,71 @@ providers:
 ### 1. Extensibility First
 
 Every core component (Provider, Evaluator, Reporter) can be extended:
+
+```mermaid
+classDiagram
+    class BaseProvider {
+        <<abstract>>
+        +invoke(messages, config)
+        +get_cost()
+        +cleanup()
+    }
+
+    class BaseEvaluator {
+        <<abstract>>
+        +evaluate(test_case, response)
+        +get_score()
+    }
+
+    class BaseReporter {
+        <<abstract>>
+        +report(results)
+        +format_output()
+    }
+
+    class GeminiProvider {
+        +invoke(messages, config)
+        +get_cost()
+    }
+
+    class CustomProvider {
+        +invoke(messages, config)
+        +get_cost()
+    }
+
+    class ResponseEvaluator {
+        +evaluate(test_case, response)
+        +calculate_similarity()
+    }
+
+    class CustomEvaluator {
+        +evaluate(test_case, response)
+        +custom_logic()
+    }
+
+    class HTMLReporter {
+        +report(results)
+        +generate_dashboard()
+    }
+
+    class CustomReporter {
+        +report(results)
+        +send_notification()
+    }
+
+    BaseProvider <|-- GeminiProvider
+    BaseProvider <|-- CustomProvider
+    BaseEvaluator <|-- ResponseEvaluator
+    BaseEvaluator <|-- CustomEvaluator
+    BaseReporter <|-- HTMLReporter
+    BaseReporter <|-- CustomReporter
+
+    note for BaseProvider "Extend to add\nnew LLM providers"
+    note for BaseEvaluator "Extend to add\ncustom evaluation logic"
+    note for BaseReporter "Extend to add\ncustom reporting"
+```
+
+Example implementation:
 
 ```python
 # Extend any base class
