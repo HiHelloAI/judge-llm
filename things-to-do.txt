@@ -1,4 +1,4 @@
 opentelemetry
-reporting to DB
 support yaml eval set
 support artifacts
+reporter registry

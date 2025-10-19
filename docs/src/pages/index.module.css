@@ -20,4 +20,40 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 1rem;
+}
+
+.logo {
+  width: 150px;
+  margin-bottom: 1rem;
+}
+
+.demoSection {
+  padding: 4rem 0;
+  background-color: var(--ifm-background-surface-color);
+}
+
+.demoSection h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.demoImage {
+  max-width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.quickStartSection {
+  padding: 4rem 0;
+}
+
+.codeBlock {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow: auto;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
 }
