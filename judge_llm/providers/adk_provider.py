@@ -10,6 +10,7 @@ import asyncio
 import importlib
 import logging
 import sys
+import threading
 import time
 import uuid
 from typing import Any, Dict, Optional
@@ -62,6 +63,7 @@ class GoogleADKProvider(BaseProvider):
         self._session_service = InMemorySessionService()
         self._artifact_service = InMemoryArtifactService()
         self._agent = None  # Cached agent instance
+        self._agent_lock = threading.Lock()  # Thread-safe agent loading
 
     def execute(self, eval_case: EvalCase) -> ProviderResult:
         """Execute evaluation case using Google ADK agent.
@@ -72,12 +74,13 @@ class GoogleADKProvider(BaseProvider):
         Returns:
             ProviderResult with conversation history and metadata
         """
-        start_time = time.time()
-
         try:
-            # Get agent (cached after first load)
+            # Get agent (cached after first load, thread-safe)
             if self._agent is None:
-                self._agent = self._load_agent()
+                with self._agent_lock:
+                    # Double-check after acquiring lock
+                    if self._agent is None:
+                        self._agent = self._load_agent()
 
             # Run ADK inference
             session_id = f"eval_session_{uuid.uuid4()}"
@@ -99,7 +102,6 @@ class GoogleADKProvider(BaseProvider):
 
             return ProviderResult(
                 conversation_history=conversation_history,
-                time_taken=time.time() - start_time,
                 metadata={
                     "provider": "google_adk",
                     "agent_id": self.agent_id,
@@ -113,7 +115,6 @@ class GoogleADKProvider(BaseProvider):
             logger.error(f"Inference failed for '{eval_case.eval_id}': {e}", exc_info=True)
             return ProviderResult(
                 conversation_history=[],
-                time_taken=time.time() - start_time,
                 metadata={"provider": "google_adk", "agent_id": self.agent_id},
                 success=False,
                 error=str(e),

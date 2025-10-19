@@ -82,7 +82,6 @@ class GeminiProvider(BaseProvider):
             f"GeminiProvider executing eval case: {eval_case.eval_id} "
             f"with {len(eval_case.conversation)} turns"
         )
-        start_time = time.time()
 
         try:
             # Build system instruction if available
@@ -175,13 +174,9 @@ class GeminiProvider(BaseProvider):
                     f"cost=${turn_cost:.6f}, context maintained"
                 )
 
-            # Calculate total metrics
-            time_taken = time.time() - start_time
-
             result = ProviderResult(
                 conversation_history=conversation_history,
                 cost=total_cost,
-                time_taken=time_taken,
                 token_usage=total_token_usage,
                 metadata={
                     "provider": "gemini",
@@ -194,20 +189,18 @@ class GeminiProvider(BaseProvider):
             )
 
             self.logger.info(
-                f"GeminiProvider completed {len(conversation_history)} turns in {time_taken:.2f}s, "
+                f"GeminiProvider completed {len(conversation_history)} turns, "
                 f"total cost: ${total_cost:.6f}, total tokens: {total_token_usage['total_tokens']}"
             )
 
             return result
 
         except Exception as e:
-            time_taken = time.time() - start_time
             self.logger.error(f"Gemini API error for eval_id {eval_case.eval_id}: {e}")
 
             return ProviderResult(
                 conversation_history=[],
                 cost=0.0,
-                time_taken=time_taken,
                 token_usage={},
                 metadata={
                     "provider": "gemini",

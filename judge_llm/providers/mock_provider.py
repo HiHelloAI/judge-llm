@@ -1,6 +1,5 @@
 """Mock provider for testing and examples"""
 
-import time
 from typing import Any, Dict, Optional
 from judge_llm.core.models import EvalCase, ProviderResult, Invocation, Content, Part
 from judge_llm.providers.base import BaseProvider
@@ -31,14 +30,9 @@ class MockProvider(BaseProvider):
         """
         self.logger.info(f"MockProvider executing eval case: {eval_case.eval_id}")
 
-        start_time = time.time()
-
         # Simply copy the conversation from the eval case
         # In a real provider, this would call the actual LLM
         conversation_history = eval_case.conversation.copy()
-
-        end_time = time.time()
-        time_taken = end_time - start_time
 
         # Mock cost and token usage
         total_tokens = sum(
@@ -50,7 +44,6 @@ class MockProvider(BaseProvider):
         result = ProviderResult(
             conversation_history=conversation_history,
             cost=total_tokens * 0.00001,  # Mock cost calculation
-            time_taken=time_taken,
             token_usage={
                 "prompt_tokens": total_tokens // 2,
                 "completion_tokens": total_tokens // 2,
@@ -65,7 +58,7 @@ class MockProvider(BaseProvider):
         )
 
         self.logger.debug(
-            f"MockProvider completed in {time_taken:.2f}s, "
+            f"MockProvider completed, "
             f"cost: ${result.cost:.4f}, tokens: {total_tokens}"
         )
 

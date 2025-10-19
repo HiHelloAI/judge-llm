@@ -275,7 +275,7 @@ def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> Eval
 
     # Execute evaluations
     logger.info("▶ Starting evaluation...")
-    execution_runs = _execute_evaluations(
+    execution_runs, wall_clock_time = _execute_evaluations(
         eval_sets=eval_sets,
         providers=providers,
         evaluators=evaluators,
@@ -286,7 +286,7 @@ def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> Eval
 
     # Generate report
     logger.debug("Generating evaluation report")
-    report = _generate_report(execution_runs)
+    report = _generate_report(execution_runs, wall_clock_time)
 
     # Generate reports via reporters
     logger.debug("Generating reports via reporters")
@@ -484,8 +484,12 @@ def _execute_evaluations(
     num_runs: int,
     parallel_execution: bool,
     max_workers: int,
-) -> List[ExecutionRun]:
-    """Execute all evaluations"""
+) -> tuple[List[ExecutionRun], float]:
+    """Execute all evaluations.
+
+    Returns:
+        Tuple of (execution_runs, wall_clock_time_seconds)
+    """
     logger = get_logger()
     execution_runs = []
 
@@ -497,10 +501,14 @@ def _execute_evaluations(
                 for run_num in range(num_runs):
                     tasks.append((eval_set, eval_case, provider, evaluators, run_num + 1))
 
-    logger.info(f"Total tasks to execute: {len(tasks)}")
+    logger.debug(f"Total tasks to execute: {len(tasks)}")
+
+    # Track wall-clock time for the entire execution
+    import time
+    start_time = time.time()
 
     if parallel_execution and len(tasks) > 1:
-        logger.info(f"Executing in parallel with {max_workers} workers")
+        logger.debug(f"Executing in parallel with {max_workers} workers")
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
                 executor.submit(_execute_single_task, *task): task for task in tasks
@@ -513,7 +521,7 @@ def _execute_evaluations(
                 except Exception as e:
                     logger.error(f"Task failed with error: {e}")
     else:
-        logger.info("Executing sequentially")
+        logger.debug("Executing sequentially")
         for task in tasks:
             try:
                 exec_run = _execute_single_task(*task)
@@ -521,7 +529,9 @@ def _execute_evaluations(
             except Exception as e:
                 logger.error(f"Task failed with error: {e}")
 
-    return execution_runs
+    wall_clock_time = time.time() - start_time
+
+    return execution_runs, wall_clock_time
 
 
 def _execute_single_task(
@@ -535,12 +545,15 @@ def _execute_single_task(
     logger = get_logger()
     execution_id = str(uuid.uuid4())
 
-    logger.info(
+    logger.debug(
         f"Executing: eval_case={eval_case.eval_id}, "
         f"provider={provider.get_provider_type()}, run={run_number}"
     )
 
-    # Execute provider
+    # Execute provider (track time at framework level)
+    import time
+    start_time = time.time()
+
     try:
         provider_result = provider.execute(eval_case)
     except Exception as e:
@@ -549,6 +562,20 @@ def _execute_single_task(
             conversation_history=[],
             success=False,
             error=str(e),
+        )
+
+    # Set time_taken at framework level if provider didn't set it
+    execution_time = time.time() - start_time
+    if provider_result.time_taken == 0:
+        # Create new result with updated time (Pydantic models are immutable)
+        provider_result = ProviderResult(
+            conversation_history=provider_result.conversation_history,
+            cost=provider_result.cost,
+            time_taken=execution_time,
+            token_usage=provider_result.token_usage,
+            metadata=provider_result.metadata,
+            success=provider_result.success,
+            error=provider_result.error,
         )
 
     # Run evaluators
@@ -592,10 +619,22 @@ def _execute_single_task(
     return execution_run
 
 
-def _generate_report(execution_runs: List[ExecutionRun]) -> EvaluationReport:
-    """Generate final evaluation report"""
+def _generate_report(execution_runs: List[ExecutionRun], wall_clock_time: float = None) -> EvaluationReport:
+    """Generate final evaluation report.
+
+    Args:
+        execution_runs: List of execution runs
+        wall_clock_time: Actual wall-clock time for all executions (for parallel runs)
+                        If None, will sum individual execution times (for sequential)
+    """
     total_cost = sum(run.provider_result.cost for run in execution_runs)
-    total_time = sum(run.provider_result.time_taken for run in execution_runs)
+
+    # Use wall-clock time if provided (parallel execution), otherwise sum individual times (sequential)
+    if wall_clock_time is not None:
+        total_time = wall_clock_time
+    else:
+        total_time = sum(run.provider_result.time_taken for run in execution_runs)
+
     success_count = sum(1 for run in execution_runs if run.overall_success)
     success_rate = success_count / len(execution_runs) if execution_runs else 0.0
     overall_success = success_rate == 1.0
