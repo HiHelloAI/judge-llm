@@ -8,9 +8,9 @@ version = "1.0.0"
 description = "A lightweight LLM evaluation framework for comparing and testing AI providers"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "CC-BY-NC-SA-4.0"}
+license = { text = "CC-BY-NC-SA-4.0" }
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    { name = "Your Name", email = "your.email@example.com" }
 ]
 keywords = ["llm", "evaluation", "testing", "ai", "gemini", "openai", "claude"]
 classifiers = [
@@ -43,6 +43,12 @@ dev = [
     "pytest-cov>=4.0.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
+]
+
+google_adk = [
+    "google-adk==1.16.0",
+    "google-adk[eval]==1.16.0",
+    "rouge-score"
 ]
 
 gemini = [

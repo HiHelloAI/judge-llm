@@ -27,7 +27,7 @@ An evaluation dataset consists of:
 
 ### JSON Format
 
-\`\`\`json
+```json
 {
   "eval_set_id": "my_test_set_v1",
   "name": "My Test Set",
@@ -45,11 +45,11 @@ An evaluation dataset consists of:
     }
   ]
 }
-\`\`\`
+```
 
 ### YAML Format
 
-\`\`\`yaml
+```yaml
 eval_set_id: my_test_set_v1
 name: My Test Set
 description: Description of this evaluation set
@@ -61,56 +61,56 @@ eval_cases:
       app_name: math_tutor
       user_id: test_user
     creation_timestamp: 1704067200.0
-\`\`\`
+```
 
 ## Loading Datasets
 
 ### Single File
 
 **JSON:**
-\`\`\`yaml
+```yaml
 dataset:
   loader: local_file
   paths:
     - ./tests/math.json
-\`\`\`
+```
 
 **YAML:**
-\`\`\`yaml
+```yaml
 dataset:
   loader: local_file
   paths:
     - ./tests/math.yaml
-\`\`\`
+```
 
 ### Multiple Files (Mixed Formats)
 
-\`\`\`yaml
+```yaml
 dataset:
   loader: local_file
   paths:
     - ./tests/math.json
     - ./tests/science.yaml
     - ./tests/history.yml
-\`\`\`
+```
 
 ### Directory Loading
 
 Load all JSON files:
-\`\`\`yaml
+```yaml
 dataset:
   loader: directory
   paths: [./tests]
   pattern: "*.json"
-\`\`\`
+```
 
 Load all YAML files:
-\`\`\`yaml
+```yaml
 dataset:
   loader: directory
   paths: [./tests]
   pattern: "*.yaml"
-\`\`\`
+```
 
 ## Best Practices
 
@@ -133,9 +133,9 @@ See [examples/01-gemini-agent/](https://github.com/yourusername/judge-llm/tree/m
 
 Validate your configuration and dataset:
 
-\`\`\`bash
+```bash
 judge-llm validate --config config.yaml
-\`\`\`
+```
 
 ## Related Documentation
 
