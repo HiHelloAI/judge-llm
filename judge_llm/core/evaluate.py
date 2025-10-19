@@ -209,7 +209,9 @@ def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> Eval
     """Execute evaluation from configuration dictionary"""
     logger = get_logger()
 
-    # Register custom reporters from config reporters section (if any)
+    # Register custom components from config (if any)
+    _process_provider_registrations(config)
+    _process_evaluator_registrations(config)
     _process_reporter_registrations(config)
 
     # Validate configuration
@@ -664,3 +666,151 @@ def _process_reporter_registrations(config: Dict[str, Any]):
                 
             except Exception as e:
                 logger.warning(f"Failed to register reporter '{register_as}': {e}")
+
+
+def _process_evaluator_registrations(config: Dict[str, Any]):
+    """Process evaluator registrations from config
+    
+    This allows registering custom evaluators in default config that can be
+    referenced by name in actual configs.
+    
+    In default config:
+        evaluators:
+          - type: custom
+            module_path: ./my_evaluators/safety.py
+            class_name: SafetyEvaluator
+            register_as: safety  # Register this evaluator globally
+            
+    In actual config:
+        evaluators:
+          - type: safety  # Use the registered evaluator
+            config:
+              severity_threshold: high
+    
+    Args:
+        config: Configuration dictionary
+    """
+    logger = get_logger()
+    evaluator_registry = get_evaluator_registry()
+    
+    evaluators_config = config.get("evaluators", [])
+    
+    for evaluator_config in evaluators_config:
+        # Check if this is a custom evaluator that should be registered
+        if evaluator_config.get("type") == "custom" and "register_as" in evaluator_config:
+            register_as = evaluator_config.get("register_as")
+            module_path = evaluator_config.get("module_path")
+            class_name = evaluator_config.get("class_name")
+            
+            if not module_path or not class_name:
+                logger.warning(
+                    f"Cannot register evaluator '{register_as}': missing module_path or class_name"
+                )
+                continue
+            
+            # Check if already registered
+            if evaluator_registry.has(register_as):
+                logger.debug(f"Evaluator '{register_as}' already registered, skipping")
+                continue
+            
+            try:
+                # Load the custom evaluator class
+                evaluator_class = evaluator_registry.load_custom_evaluator(module_path, class_name)
+                
+                # Register it with the specified name
+                evaluator_registry.register(register_as, evaluator_class)
+                
+                logger.info(f"✓ Registered custom evaluator '{register_as}' from {module_path}")
+                
+            except Exception as e:
+                logger.warning(f"Failed to register evaluator '{register_as}': {e}")
+
+
+def _process_provider_registrations(config: Dict[str, Any]):
+    """Process provider registrations from config
+    
+    This allows registering custom providers in default config that can be
+    referenced by name in actual configs.
+    
+    In default config:
+        providers:
+          - type: custom
+            module_path: ./my_providers/custom_llm.py
+            class_name: CustomLLMProvider
+            register_as: custom_llm  # Register this provider globally
+            
+    In actual config:
+        providers:
+          - type: custom_llm  # Use the registered provider
+            agent_id: my_agent
+            config:
+              api_key: ${MY_API_KEY}
+    
+    Args:
+        config: Configuration dictionary
+    """
+    logger = get_logger()
+    provider_registry = get_provider_registry()
+    
+    providers_config = config.get("providers", [])
+    
+    for provider_config in providers_config:
+        # Check if this is a custom provider that should be registered
+        if provider_config.get("type") == "custom" and "register_as" in provider_config:
+            register_as = provider_config.get("register_as")
+            module_path = provider_config.get("module_path")
+            class_name = provider_config.get("class_name")
+            
+            if not module_path or not class_name:
+                logger.warning(
+                    f"Cannot register provider '{register_as}': missing module_path or class_name"
+                )
+                continue
+            
+            # Check if already registered
+            if provider_registry.has(register_as):
+                logger.debug(f"Provider '{register_as}' already registered, skipping")
+                continue
+            
+            try:
+                # Load the custom provider class
+                # For providers, we need to use importlib directly since there's no load_custom_provider method
+                from pathlib import Path
+                import importlib.util
+                import sys
+                
+                path = Path(module_path).expanduser().resolve()
+                
+                if not path.exists():
+                    raise FileNotFoundError(f"Module file not found: {module_path}")
+                
+                # Create a unique module name
+                module_name = f"custom_provider_{path.stem}_{id(path)}"
+                
+                # Load the module
+                spec = importlib.util.spec_from_file_location(module_name, path)
+                if spec is None or spec.loader is None:
+                    raise ImportError(f"Cannot load module from {module_path}")
+                
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[module_name] = module
+                spec.loader.exec_module(module)
+                
+                # Get the class
+                if not hasattr(module, class_name):
+                    raise AttributeError(f"Class {class_name} not found in {module_path}")
+                
+                provider_class = getattr(module, class_name)
+                
+                # Validate that it inherits from BaseProvider
+                from judge_llm.providers.base import BaseProvider
+                if not issubclass(provider_class, BaseProvider):
+                    raise TypeError(f"Class {class_name} must inherit from BaseProvider")
+                
+                # Register it with the specified name
+                provider_registry.register(register_as, provider_class)
+                
+                logger.info(f"✓ Registered custom provider '{register_as}' from {module_path}")
+                
+            except Exception as e:
+                logger.warning(f"Failed to register provider '{register_as}': {e}")

@@ -1,32 +1,38 @@
-# Using Custom Reporters in Default Config
+# Register Custom Components in Default Config
 
-This example demonstrates how to **register custom reporters in your default configuration** so they can be used by name in your test configs.
+This example demonstrates how to **register custom providers, evaluators, and reporters** in your default configuration so they can be used by name in your test configs.
 
-## The Problem This Solves
+## Overview
 
-Without this feature, you'd need to specify the full custom reporter details in every test config:
+Judge LLM supports registering custom components in three categories:
+- **Providers** - Custom LLM providers
+- **Evaluators** - Custom evaluation logic
+- **Reporters** - Custom report formats
 
-```yaml
-# Every test config needs this verbose configuration
-reporters:
-  - type: custom
-    module_path: ./reporters/csv_reporter.py
-    class_name: CSVReporter
-    config:
-      output_path: ./results.csv
-```
-
-With default config registration, you can:
-1. **Register once** in your defaults
-2. **Use by name** in all test configs
+All three use the same `register_as` pattern!
 
 ## How It Works
 
 ### Step 1: Register in Default Config
 
-In `.judge_llm.defaults.yaml` (project root or `~/.judge_llm/defaults.yaml`):
+In `.judge_llm.defaults.yaml`:
 
 ```yaml
+# Register custom provider
+providers:
+  - type: custom
+    module_path: ./providers/my_provider.py
+    class_name: MyProvider
+    register_as: my_provider  # ← Register with this name
+
+# Register custom evaluator
+evaluators:
+  - type: custom
+    module_path: ./evaluators/safety.py
+    class_name: SafetyEvaluator
+    register_as: safety  # ← Register with this name
+
+# Register custom reporter
 reporters:
   - type: custom
     module_path: ./reporters/csv_reporter.py
@@ -39,23 +45,34 @@ reporters:
 In your test config files:
 
 ```yaml
-reporters:
-  - type: csv  # ← Just use the registered name!
+providers:
+  - type: my_provider  # ← Use registered provider
+    agent_id: test
+
+evaluators:
+  - type: safety  # ← Use registered evaluator
     config:
-      output_path: ./my_results.csv
+      severity: high
+
+reporters:
+  - type: csv  # ← Use registered reporter
+    config:
+      output_path: ./results.csv
 ```
 
-## Files in This Example
+## Complete Example
+
+This example includes:
 
 ```
 default_config_reporters/
-├── .judge_llm.defaults.yaml    # Default config with reporter registrations
-├── test_config.yaml             # Test config using registered reporters
+├── .judge_llm.defaults.yaml    # Registers all custom components
+├── test_config.yaml             # Uses registered components by name
 ├── reporters/
-│   ├── csv_reporter.py          # Custom CSV reporter
-│   ├── slack_reporter.py        # Custom Slack notification reporter
-│   └── metrics_reporter.py      # Custom metrics reporter
-└── README.md                    # This file
+│   ├── csv_reporter.py
+│   ├── slack_reporter.py
+│   └── metrics_reporter.py
+└── README.md
 ```
 
 ## Running the Example
@@ -63,150 +80,63 @@ default_config_reporters/
 ```bash
 cd examples/default_config_reporters
 
-# The defaults will be auto-loaded from .judge_llm.defaults.yaml
+# Defaults auto-loaded, registered components available
 judge-llm run --config test_config.yaml
 ```
 
-## What Happens
+## Registration Patterns
 
-1. **Framework loads defaults** from `.judge_llm.defaults.yaml`
-2. **Processes `reporters` section** looking for `register_as` fields
-3. **Registers custom reporters** with specified names (`csv`, `slack`, `metrics`)
-4. **Loads test config** (`test_config.yaml`)
-5. **Uses registered reporters** when it sees `type: csv`, `type: slack`, etc.
-6. **Generates reports** in all formats
-
-## Benefits
-
-### 1. DRY (Don't Repeat Yourself)
-Register once, use everywhere:
+### Pattern 1: Providers
 
 ```yaml
-# defaults.yaml - register once
-reporters:
-  - type: custom
-    module_path: ./reporters/csv_reporter.py
-    class_name: CSVReporter
-    register_as: csv
-```
-
-```yaml
-# test1.yaml - use it
-reporters:
-  - type: csv
-    config: {output_path: ./test1.csv}
-
-# test2.yaml - use it again
-reporters:
-  - type: csv
-    config: {output_path: ./test2.csv}
-
-# test3.yaml - use it again
-reporters:
-  - type: csv
-    config: {output_path: ./test3.csv}
-```
-
-### 2. Team Standardization
-
-Share default config across team:
-
-```bash
-# Everyone uses the same defaults
-export JUDGE_LLM_DEFAULTS=/shared/team/defaults.yaml
-
-# Or commit to repo
-.judge_llm.defaults.yaml  ← in git
-```
-
-### 3. Environment-Specific Reporters
-
-Different reporters for different environments:
-
-```yaml
-# Production defaults
-reporters:
-  - type: custom
-    module_path: ./reporters/datadog_reporter.py
-    class_name: DatadogReporter
-    register_as: metrics
-    
-# Development defaults  
-reporters:
-  - type: custom
-    module_path: ./reporters/local_metrics.py
-    class_name: LocalMetricsReporter
-    register_as: metrics
-```
-
-Same test config works in both environments!
-
-### 4. Clean Test Configs
-
-Your test configs become clean and focused:
-
-```yaml
-# test_config.yaml - clean and simple!
-dataset:
-  loader: local_file
-  paths: [./tests.json]
-
+# defaults.yaml
 providers:
-  - type: gemini
-    agent_id: my_agent
-
-reporters:
-  - type: csv
-  - type: slack
-  - type: metrics
-```
-
-## Advanced Usage
-
-### Multiple Reporter Instances
-
-Register once, use multiple times with different configs:
-
-```yaml
-# test_config.yaml
-reporters:
-  - type: csv
-    config: {output_path: ./summary.csv}
-    
-  - type: csv
-    config: {output_path: ./detailed.csv}
-    
-  - type: slack
-    config:
-      webhook_url: ${SLACK_URL_TEAM_A}
-      channel: "#team-a"
-      
-  - type: slack
-    config:
-      webhook_url: ${SLACK_URL_TEAM_B}
-      channel: "#team-b"
-```
-
-### Override Registration
-
-If you need a different implementation for a specific test:
-
-```yaml
-reporters:
-  # Use the registered version for most reports
-  - type: csv
-    config: {output_path: ./normal.csv}
-  
-  # Override with custom implementation for special case
   - type: custom
-    module_path: ./special_csv.py
-    class_name: SpecialCSVReporter
-    config: {output_path: ./special.csv}
+    module_path: ./providers/anthropic_provider.py
+    class_name: AnthropicProvider
+    register_as: anthropic
 ```
 
-### Conditional Registration
+```yaml
+# test.yaml
+providers:
+  - type: anthropic
+    agent_id: claude_agent
+    config:
+      model: claude-3-opus
+      api_key: ${ANTHROPIC_API_KEY}
+```
 
-Use environment variables to control which reporters are registered:
+### Pattern 2: Evaluators
+
+```yaml
+# defaults.yaml
+evaluators:
+  - type: custom
+    module_path: ./evaluators/safety_evaluator.py
+    class_name: SafetyEvaluator
+    register_as: safety
+    
+  - type: custom
+    module_path: ./evaluators/compliance_evaluator.py
+    class_name: ComplianceEvaluator
+    register_as: compliance
+```
+
+```yaml
+# test.yaml
+evaluators:
+  - type: safety
+    config:
+      check_pii: true
+      check_toxicity: true
+      
+  - type: compliance
+    config:
+      regulations: [GDPR, HIPAA]
+```
+
+### Pattern 3: Reporters
 
 ```yaml
 # defaults.yaml
@@ -216,89 +146,247 @@ reporters:
     class_name: CSVReporter
     register_as: csv
     
-  # Only register Slack in production
   - type: custom
     module_path: ./reporters/slack_reporter.py
     class_name: SlackReporter
     register_as: slack
-    # Use ${ENABLE_SLACK_REPORTER} to conditionally enable
 ```
 
-## Default Config Search Order
+```yaml
+# test.yaml
+reporters:
+  - type: csv
+    config: {output_path: ./results.csv}
+    
+  - type: slack
+    config:
+      webhook_url: ${SLACK_WEBHOOK}
+      channel: "#evals"
+```
 
-Judge LLM searches for defaults in this order:
+## Benefits
 
-1. **Custom path** (if specified via `--defaults` flag)
-2. **Environment variable** `JUDGE_LLM_DEFAULTS`
-3. **Project directory** `.judge_llm.defaults.yaml` (current directory)
-4. **User home** `~/.judge_llm/defaults.yaml`
+### ✅ DRY Principle
+Register once, use everywhere:
+
+```yaml
+# defaults.yaml - ONE registration
+reporters:
+  - type: custom
+    module_path: ./my_csv.py
+    class_name: CSVReporter
+    register_as: csv
+```
+
+```yaml
+# test1.yaml, test2.yaml, test3.yaml... - just use it!
+reporters:
+  - type: csv
+```
+
+### ✅ Team Standardization
+
+Everyone uses the same components:
+
+```bash
+# Set team defaults
+export JUDGE_LLM_DEFAULTS=/team/shared/defaults.yaml
+```
+
+Or commit to repo:
+```
+.judge_llm.defaults.yaml  ← everyone uses it automatically
+```
+
+### ✅ Clean Test Configs
+
+Test configs become simple:
+
+```yaml
+dataset:
+  paths: [./tests.json]
+
+providers:
+  - type: anthropic
+    agent_id: claude
+
+evaluators:
+  - type: safety
+  - type: compliance
+
+reporters:
+  - type: csv
+  - type: slack
+```
+
+### ✅ Easy Updates
+
+Change implementation in one place:
+
+```yaml
+# defaults.yaml - update once
+reporters:
+  - type: custom
+    module_path: ./reporters/csv_v2.py  # ← Updated implementation
+    class_name: CSVReporterV2
+    register_as: csv
+```
+
+All test configs automatically use new version!
 
 ## Real-World Use Cases
 
 ### Use Case 1: Company-Wide Standards
 
 ```yaml
-# ~/.judge_llm/defaults.yaml (shared company-wide)
+# ~/.judge_llm/defaults.yaml
+providers:
+  - type: custom
+    module_path: /company/providers/company_llm.py
+    class_name: CompanyLLM
+    register_as: company_llm
+
+evaluators:
+  - type: custom
+    module_path: /company/evaluators/compliance.py
+    class_name: ComplianceEvaluator
+    register_as: compliance
+
 reporters:
   - type: custom
-    module_path: /company/shared/reporters/jira.py
+    module_path: /company/reporters/jira.py
     class_name: JiraReporter
     register_as: jira
-    
-  - type: custom
-    module_path: /company/shared/reporters/datadog.py
-    class_name: DatadogReporter
-    register_as: datadog
 ```
 
-Every employee's tests automatically use company reporters!
+Every employee automatically uses company components!
 
-### Use Case 2: CI/CD Pipeline
+### Use Case 2: Multi-Environment Setup
+
+```yaml
+# Production defaults
+reporters:
+  - type: custom
+    module_path: ./reporters/datadog.py
+    class_name: DatadogReporter
+    register_as: metrics
+
+# Dev defaults
+reporters:
+  - type: custom
+    module_path: ./reporters/console_metrics.py
+    class_name: ConsoleMetrics
+    register_as: metrics
+```
+
+Same test configs work in both environments!
+
+### Use Case 3: CI/CD Pipeline
 
 ```yaml
 # .judge_llm.defaults.yaml (in repo)
+evaluators:
+  - type: response_evaluator
+  - type: cost_evaluator
+  
+  # Custom evaluators for CI
+  - type: custom
+    module_path: ./ci/evaluators/regression.py
+    class_name: RegressionEvaluator
+    register_as: regression
+
 reporters:
   - type: custom
     module_path: ./ci/reporters/junit.py
     class_name: JUnitReporter
-    register_as: junit  # For CI test results
-    
+    register_as: junit
+```
+
+All CI jobs use the same setup!
+
+## Advanced: Register All Three Together
+
+```yaml
+# Complete defaults example
+providers:
   - type: custom
-    module_path: ./ci/reporters/coverage.py
-    class_name: CoverageReporter
-    register_as: coverage
+    module_path: ./providers/custom_llm.py
+    class_name: CustomLLM
+    register_as: custom_llm
+
+evaluators:
+  - type: response_evaluator
+  - type: cost_evaluator
+  - type: custom
+    module_path: ./evaluators/safety.py
+    class_name: SafetyEvaluator
+    register_as: safety
+
+reporters:
+  - type: custom
+    module_path: ./reporters/csv.py
+    class_name: CSVReporter
+    register_as: csv
+  - type: custom
+    module_path: ./reporters/slack.py
+    class_name: SlackReporter
+    register_as: slack
 ```
 
-All CI jobs automatically use the same reporters!
+Then in test config:
 
-### Use Case 3: Multi-Project Setup
+```yaml
+providers:
+  - type: custom_llm
+    agent_id: my_agent
 
-```
-company/
-├── shared/
-│   └── reporters/
-│       ├── csv_reporter.py
-│       ├── slack_reporter.py
-│       └── metrics_reporter.py
-├── project-a/
-│   ├── .judge_llm.defaults.yaml  ← registers shared reporters
-│   └── tests/
-└── project-b/
-    ├── .judge_llm.defaults.yaml  ← registers shared reporters
-    └── tests/
+evaluators:
+  - type: safety
+
+reporters:
+  - type: csv
+  - type: slack
 ```
 
-## Learn More
+Clean and simple!
 
-- See [Custom Reporter Example](../custom_reporter_example/) for creating custom reporters
-- See [Configuration Guide](../../docs/configuration.md) for all default config options
-- See [Reporter Documentation](../../docs/reporters.md) for built-in reporters
+## Default Config Search Order
+
+Judge LLM searches for defaults in this order:
+
+1. **Custom path** (`--defaults` flag)
+2. **Environment variable** `JUDGE_LLM_DEFAULTS`
+3. **Project directory** `.judge_llm.defaults.yaml`
+4. **User home** `~/.judge_llm/defaults.yaml`
 
 ## Summary
 
-✅ Register custom reporters in defaults
-✅ Use them by name in test configs
-✅ Share standards across team
-✅ Keep test configs clean and focused
-✅ Environment-specific configurations
-✅ Works with all default config locations
+**Question:** Can I register custom components in default config?
+
+**Answer:** YES for all three! ✅
+
+**Syntax:**
+```yaml
+# In defaults - add register_as field
+providers/evaluators/reporters:
+  - type: custom
+    module_path: ./path/to/file.py
+    class_name: MyClass
+    register_as: my_name  # ← Magic happens here!
+```
+
+```yaml
+# In test configs - just use the name!
+providers/evaluators/reporters:
+  - type: my_name
+    config: {param: value}
+```
+
+**Benefits:**
+- ✅ DRY - register once, use everywhere
+- ✅ Team standardization
+- ✅ Clean test configs
+- ✅ Easy updates
+- ✅ Works for providers, evaluators, AND reporters
+
+Perfect for managing custom components at scale! 🎉
