@@ -104,7 +104,6 @@ class ExecutionConfig(BaseModel):
     parallel_execution: bool = False
     max_workers: int = 4
     fail_on_threshold_violation: bool = True
-    validate_config: bool = True
     log_level: str = "INFO"
 
 

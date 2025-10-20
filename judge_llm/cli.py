@@ -71,11 +71,6 @@ def main():
     help="Logging level",
 )
 @click.option(
-    "--no-validate",
-    is_flag=True,
-    help="Disable configuration validation",
-)
-@click.option(
     "--no-defaults",
     is_flag=True,
     help="Disable default configuration loading",
@@ -108,7 +103,6 @@ def run(
     parallel,
     max_workers,
     log_level,
-    no_validate,
     no_defaults,
     defaults,
     report,
@@ -124,7 +118,6 @@ def run(
             logger.info(f"Running evaluation from config file: {config}")
             evaluate(
                 config=config,
-                validate_config=not no_validate,
                 use_defaults=not no_defaults,
                 defaults=defaults,
             )
@@ -169,7 +162,6 @@ def run(
 
             evaluate(
                 config=cli_config,
-                validate_config=not no_validate,
                 use_defaults=not no_defaults,
                 defaults=defaults,
             )

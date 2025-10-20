@@ -13,7 +13,6 @@ agent:
   parallel_execution: false
   max_workers: 4
   fail_on_threshold_violation: true
-  validate_config: true
 
 # Default providers - can be overridden in test configs
 # Uncomment the provider you want to use and configure with your API key

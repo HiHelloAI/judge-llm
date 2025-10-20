@@ -370,7 +370,6 @@ agent:
   parallel_execution: false             # Run tests in parallel
   max_workers: 4                        # Max parallel workers (if parallel enabled)
   fail_on_threshold_violation: true    # Exit with error if evaluations fail
-  validate_config: true                 # Validate configuration before running
   log_level: INFO                       # Logging level (DEBUG|INFO|WARNING|ERROR)
 ```
 
@@ -382,7 +381,6 @@ agent:
 | `parallel_execution` | Enable parallel execution of test cases | `false` | boolean |
 | `max_workers` | Maximum number of parallel worker threads | `4` | integer |
 | `fail_on_threshold_violation` | Exit with error code when evaluator thresholds are violated | `true` | boolean |
-| `validate_config` | Validate configuration before execution | `true` | boolean |
 | `log_level` | Logging verbosity level | `INFO` | string |
 
 ### fail_on_threshold_violation

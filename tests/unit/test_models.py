@@ -274,7 +274,6 @@ class TestExecutionConfig:
         assert config.parallel_execution is False
         assert config.max_workers == 4
         assert config.fail_on_threshold_violation is True
-        assert config.validate_config is True
         assert config.log_level == "INFO"
 
     def test_execution_config_custom(self):

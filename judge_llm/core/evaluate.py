@@ -90,7 +90,6 @@ def evaluate(
     providers: Optional[List[Dict[str, Any]]] = None,
     evaluators: Optional[List[Dict[str, Any]]] = None,
     reporters: Optional[List[Dict[str, Any]]] = None,
-    validate_config: bool = True,
     use_defaults: bool = True,
     defaults: Optional[str] = None,
 ) -> EvaluationReport:
@@ -104,8 +103,7 @@ def evaluate(
                 "num_runs": 1,
                 "parallel_execution": False,
                 "max_workers": 4,
-                "fail_on_threshold_violation": True,
-                "validate_config": True
+                "fail_on_threshold_violation": True
             }
         dataset: Dataset configuration dict:
             {
@@ -132,7 +130,6 @@ def evaluate(
                 "type": "html",
                 "output_path": "./report.html"
             }]
-        validate_config: Validate configuration before execution (default: True)
         use_defaults: Use default configuration if available (default: True)
         defaults: Path to custom defaults file (optional)
 
@@ -183,7 +180,7 @@ def evaluate(
 
     logger.info("Starting Judge LLM evaluation")
 
-    return _evaluate_from_config(config_dict, validate_config)
+    return _evaluate_from_config(config_dict)
 
 
 def _load_config(
@@ -205,7 +202,7 @@ def _load_config(
     return loader.load(config, use_defaults=use_defaults, defaults_path=defaults_path)
 
 
-def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> EvaluationReport:
+def _evaluate_from_config(config: Dict[str, Any]) -> EvaluationReport:
     """Execute evaluation from configuration dictionary"""
     logger = get_logger()
 
@@ -214,29 +211,28 @@ def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> Eval
     _process_evaluator_registrations(config)
     _process_reporter_registrations(config)
 
-    # Validate configuration
-    if validate:
-        validator = get_validator()
-        is_valid, errors = validator.validate(config)
+    # Validate configuration (always required for consistency)
+    validator = get_validator()
+    is_valid, errors = validator.validate(config)
 
-        if not is_valid:
-            # Format nice validation summary
-            error_msg = "\n" + "="*80 + "\n"
-            error_msg += "  CONFIGURATION VALIDATION FAILED\n"
-            error_msg += "="*80 + "\n\n"
-            error_msg += f"Found {len(errors)} error(s) in your configuration:\n\n"
+    if not is_valid:
+        # Format nice validation summary
+        error_msg = "\n" + "="*80 + "\n"
+        error_msg += "  CONFIGURATION VALIDATION FAILED\n"
+        error_msg += "="*80 + "\n\n"
+        error_msg += f"Found {len(errors)} error(s) in your configuration:\n\n"
 
-            for idx, err in enumerate(errors, 1):
-                error_msg += f"{idx}. [{err.field}]\n"
-                error_msg += f"   ✗ Error: {err.message}\n"
-                error_msg += f"   ✓ Fix:   {err.fix_suggestion}\n\n"
+        for idx, err in enumerate(errors, 1):
+            error_msg += f"{idx}. [{err.field}]\n"
+            error_msg += f"   ✗ Error: {err.message}\n"
+            error_msg += f"   ✓ Fix:   {err.fix_suggestion}\n\n"
 
-            error_msg += "="*80 + "\n"
-            error_msg += "Please fix the above issues and try again.\n"
-            error_msg += "="*80
+        error_msg += "="*80 + "\n"
+        error_msg += "Please fix the above issues and try again.\n"
+        error_msg += "="*80
 
-            logger.error(error_msg)
-            raise ValueError(error_msg)
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
     # Extract configuration
     agent_config = config.get("agent", {})
@@ -382,7 +378,7 @@ def _initialize_providers(
     providers = []
 
     # Extract agent metadata from agent config (exclude execution settings)
-    execution_keys = {"num_runs", "parallel_execution", "max_workers", "fail_on_threshold_violation", "validate_config", "log_level"}
+    execution_keys = {"num_runs", "parallel_execution", "max_workers", "fail_on_threshold_violation", "log_level"}
     agent_metadata = {
         k: v
         for k, v in agent_config.items()

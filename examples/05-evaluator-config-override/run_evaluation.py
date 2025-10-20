@@ -74,7 +74,6 @@ def main():
 
         report = evaluate(
             config=str(config_path),
-            validate_config=True,
             use_defaults=True
         )
 
