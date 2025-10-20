@@ -1,7 +1,27 @@
 {
-  "name": "docs",
-  "version": "0.0.0",
+  "name": "judge-llm-docs",
+  "version": "1.0.0",
+  "description": "Documentation site for Judge LLM - A lightweight framework for evaluating and comparing LLM providers",
+  "author": "Judge LLM Contributors",
+  "license": "CC-BY-NC-SA-4.0",
   "private": true,
+  "keywords": [
+    "llm",
+    "evaluation",
+    "testing",
+    "ai",
+    "machine-learning",
+    "gemini",
+    "openai",
+    "anthropic",
+    "quality-assurance",
+    "docusaurus"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/judge-llm.git",
+    "directory": "docs"
+  },
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
@@ -17,6 +37,7 @@
   "dependencies": {
     "@docusaurus/core": "3.9.2",
     "@docusaurus/preset-classic": "3.9.2",
+    "@easyops-cn/docusaurus-search-local": "^0.52.1",
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
     "prism-react-renderer": "^2.3.0",

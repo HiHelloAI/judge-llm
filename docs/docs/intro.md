@@ -21,15 +21,17 @@ Perfect for regression testing, A/B testing providers, and ensuring production-g
 
 ## Key Features
 
-- 🚀 **Multiple Providers** - Gemini, Mock, and custom providers with registry-based extensibility
+- 🚀 **Multiple Providers** - Gemini, Google ADK, Mock, and custom providers with registry-based extensibility
 - 📊 **Built-in Evaluators** - Response similarity, trajectory validation, cost/latency checks
 - 🔌 **Registry System** - Register custom providers, evaluators, and reporters once, use everywhere
 - 📈 **Rich Reports** - Console tables, interactive HTML dashboard, JSON exports, SQLite database, plus custom reporters
 - ⚡ **Parallel Execution** - Run evaluations concurrently with configurable workers
+- 🚦 **Quality Gates** - Fail CI/CD builds when thresholds are violated (configurable)
 - 🛠️ **Config-Driven** - YAML configs with smart defaults and component registration
 - 🎯 **Per-Test Overrides** - Fine-tune evaluator thresholds per test case
 - 🔐 **Environment Variables** - Auto-loads `.env` for secure API key management
 - 🏢 **Team Standardization** - Share default configs across your organization
+- 🔍 **Full-Text Search** - Quick documentation search with keyboard shortcuts
 
 ## Quick Example
 

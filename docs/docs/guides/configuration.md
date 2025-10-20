@@ -74,9 +74,11 @@ dataset:
 
 ## Provider Configuration
 
-The `providers` section defines which LLM(s) to evaluate. You can configure single or multiple providers.
+The `providers` section defines which LLM(s) to evaluate. You can configure single or multiple providers to test and compare different models.
 
-### Gemini
+### Gemini Provider
+
+Google's Gemini models via the official API.
 
 ```yaml
 providers:
@@ -84,22 +86,98 @@ providers:
     agent_id: gemini_agent
     model: gemini-2.0-flash-exp
     temperature: 0.0
-    max_tokens: 1024
-    api_key: ${GEMINI_API_KEY}
+    max_tokens: 8192
+    top_p: 0.95
+    top_k: 40
+    api_key: ${GOOGLE_API_KEY}
 ```
 
 **Configuration Options:**
 
 | Option | Description | Default | Required |
 |--------|-------------|---------|----------|
-| `type` | Provider type | - | Yes |
-| `agent_id` | Unique identifier | - | Yes |
+| `type` | Provider type (`gemini`) | - | Yes |
+| `agent_id` | Unique identifier for this agent | - | Yes |
 | `model` | Model name | `gemini-2.0-flash-exp` | No |
-| `temperature` | Sampling temperature (0-1) | `0.0` | No |
-| `max_tokens` | Maximum response tokens | `1024` | No |
-| `api_key` | API key | From env | No |
+| `temperature` | Sampling temperature (0-1) | `1.0` | No |
+| `max_tokens` | Maximum response tokens | `8192` | No |
+| `top_p` | Top-p sampling (0-1) | `0.95` | No |
+| `top_k` | Top-k sampling | `40` | No |
+| `api_key` | API key | `${GOOGLE_API_KEY}` | No |
 
-### OpenAI
+**Supported Models:**
+- `gemini-2.0-flash-exp` - Latest experimental flash model (recommended)
+- `gemini-1.5-flash` - Fast, cost-effective model
+- `gemini-1.5-pro` - High capability model
+- `gemini-1.5-flash-8b` - Ultra-fast, lightweight model
+
+**Note:** Requires `GOOGLE_API_KEY` environment variable or explicit `api_key` parameter.
+
+### Mock Provider
+
+Built-in test provider that returns expected responses without API calls. Perfect for testing and development.
+
+```yaml
+providers:
+  - type: mock
+    agent_id: test_agent
+```
+
+**Configuration Options:**
+
+| Option | Description | Default | Required |
+|--------|-------------|---------|----------|
+| `type` | Provider type (`mock`) | - | Yes |
+| `agent_id` | Unique identifier | - | Yes |
+
+**Features:**
+- No API calls - returns conversation history from test cases
+- Instant execution - no network latency
+- Cost calculation - mock token counting for testing
+- No authentication required
+
+**Use Cases:**
+- Development and testing
+- CI/CD without API costs
+- Validating test case structure
+- Framework development
+
+### Google ADK Provider
+
+Google's Agent Development Kit for building AI agents with tool use.
+
+```yaml
+providers:
+  - type: google_adk
+    agent_id: adk_agent
+    agent_metadata:
+      module_path: "my_agent.agent"
+      agent_name: "root_agent"
+      root_path: "."
+```
+
+**Configuration Options:**
+
+| Option | Description | Default | Required |
+|--------|-------------|---------|----------|
+| `type` | Provider type (`google_adk`) | - | Yes |
+| `agent_id` | Unique identifier | - | Yes |
+| `agent_metadata.module_path` | Python module path to agent | - | Yes |
+| `agent_metadata.agent_name` | Agent variable name in module | `root_agent` | No |
+| `agent_metadata.root_path` | Root directory for imports | `.` | No |
+
+**Features:**
+- Async agent execution
+- Tool calling support
+- Multi-turn conversations
+- Session management
+- Thread-safe agent caching
+
+See the `examples/09-google-adk-agent` directory in the repository for a complete setup guide.
+
+### OpenAI Provider
+
+OpenAI's GPT models (requires custom implementation).
 
 ```yaml
 providers:
@@ -115,14 +193,18 @@ providers:
 
 | Option | Description | Default | Required |
 |--------|-------------|---------|----------|
-| `type` | Provider type | - | Yes |
+| `type` | Provider type (`openai`) | - | Yes |
 | `agent_id` | Unique identifier | - | Yes |
 | `model` | Model name | `gpt-4` | No |
-| `temperature` | Sampling temperature (0-1) | `0.0` | No |
-| `max_tokens` | Maximum response tokens | `1024` | No |
-| `api_key` | API key | From env | No |
+| `temperature` | Sampling temperature (0-1) | `0.7` | No |
+| `max_tokens` | Maximum response tokens | `2048` | No |
+| `api_key` | API key | `${OPENAI_API_KEY}` | No |
 
-### Anthropic
+**Note:** Requires custom provider implementation. See [Custom Providers](#custom-providers) below.
+
+### Anthropic Provider
+
+Anthropic's Claude models (requires custom implementation).
 
 ```yaml
 providers:
@@ -138,33 +220,46 @@ providers:
 
 | Option | Description | Default | Required |
 |--------|-------------|---------|----------|
-| `type` | Provider type | - | Yes |
+| `type` | Provider type (`anthropic`) | - | Yes |
 | `agent_id` | Unique identifier | - | Yes |
 | `model` | Model name | `claude-3-5-sonnet-20241022` | No |
-| `temperature` | Sampling temperature (0-1) | `0.0` | No |
-| `max_tokens` | Maximum response tokens | `1024` | No |
-| `api_key` | API key | From env | No |
+| `temperature` | Sampling temperature (0-1) | `1.0` | No |
+| `max_tokens` | Maximum response tokens | `4096` | No |
+| `api_key` | API key | `${ANTHROPIC_API_KEY}` | No |
+
+**Note:** Requires custom provider implementation. See [Custom Providers](#custom-providers) below.
 
 ### Multiple Providers (A/B Testing)
 
-Compare multiple models in a single run:
+Compare multiple models in a single evaluation run. Each provider evaluates the same test cases independently.
 
 ```yaml
 providers:
   - type: gemini
     agent_id: gemini_flash
     model: gemini-2.0-flash-exp
-    
-  - type: openai
-    agent_id: gpt4
-    model: gpt-4
-    
-  - type: anthropic
-    agent_id: claude
-    model: claude-3-5-sonnet-20241022
+    temperature: 0.0
+
+  - type: gemini
+    agent_id: gemini_pro
+    model: gemini-1.5-pro
+    temperature: 0.0
+
+  - type: mock
+    agent_id: baseline
 ```
 
+**Benefits:**
+- Compare response quality across models
+- Compare cost and latency
+- Identify best model for your use case
+- Regression testing when switching models
+
+**Output:** Each provider generates separate execution runs in the report, allowing side-by-side comparison.
+
 ### Custom Providers
+
+Implement custom providers for any LLM API or service.
 
 ```yaml
 providers:
@@ -172,10 +267,98 @@ providers:
     module_path: ./providers/my_provider.py
     class_name: MyCustomProvider
     agent_id: custom_agent
-    # Custom config options
+    # Custom config options passed to provider
     endpoint: https://api.example.com
     api_key: ${CUSTOM_API_KEY}
+    timeout: 30
 ```
+
+**Implementation Example:**
+
+```python
+# providers/my_provider.py
+from judge_llm.providers.base import BaseProvider
+from judge_llm.core.models import EvalCase, ProviderResult, Invocation, Content, Part
+
+class MyCustomProvider(BaseProvider):
+    def __init__(self, agent_id, agent_config_path=None, agent_metadata=None, **provider_metadata):
+        super().__init__(agent_id, agent_config_path, agent_metadata, **provider_metadata)
+
+        # Access custom config
+        self.endpoint = provider_metadata.get("endpoint")
+        self.api_key = provider_metadata.get("api_key")
+        self.timeout = provider_metadata.get("timeout", 30)
+
+    def execute(self, eval_case: EvalCase) -> ProviderResult:
+        """Execute evaluation case using your custom LLM."""
+        try:
+            # Call your LLM API
+            response = self._call_llm_api(eval_case)
+
+            # Build conversation history
+            conversation_history = [
+                Invocation(
+                    invocation_id=inv.invocation_id,
+                    user_content=inv.user_content,
+                    final_response=Content(
+                        parts=[Part(text=response["text"])],
+                        role="model"
+                    ),
+                    intermediate_data=inv.intermediate_data,
+                    creation_timestamp=inv.creation_timestamp
+                )
+                for inv in eval_case.conversation
+            ]
+
+            return ProviderResult(
+                conversation_history=conversation_history,
+                cost=response.get("cost", 0.0),
+                token_usage=response.get("tokens", {}),
+                metadata={
+                    "provider": "custom",
+                    "agent_id": self.agent_id,
+                    "model": response.get("model")
+                },
+                success=True
+            )
+
+        except Exception as e:
+            return ProviderResult(
+                conversation_history=[],
+                success=False,
+                error=str(e)
+            )
+
+    def _call_llm_api(self, eval_case):
+        """Call your custom LLM API."""
+        # Your implementation here
+        pass
+
+    def cleanup(self):
+        """Cleanup resources."""
+        pass
+```
+
+**Registration Options:**
+
+1. **Inline in config** (shown above)
+2. **Register globally** in `.judge_llm.defaults.yaml`:
+
+```yaml
+# .judge_llm.defaults.yaml
+providers:
+  - type: custom
+    module_path: ./providers/my_provider.py
+    class_name: MyCustomProvider
+    register_as: my_provider  # ← Register globally
+
+# Then use by name in test configs
+providers:
+  - type: my_provider  # ← Uses registered provider
+    agent_id: test_agent
+```
+
+See [Custom Component Registration](#custom-component-registration) for more details.
 
 ## Agent Configuration
 

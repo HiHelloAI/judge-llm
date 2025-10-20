@@ -26,6 +26,7 @@ const config: Config = {
   projectName: 'judge-llm', // Usually your repo name.
 
   onBrokenLinks: 'throw',
+  onBrokenMarkdownLinks: 'warn',
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
@@ -52,12 +53,46 @@ const config: Config = {
     ],
   ],
 
+  themes: [
+    [
+      require.resolve('@easyops-cn/docusaurus-search-local'),
+      {
+        // Options for local search
+        hashed: true,
+        language: ['en'],
+        highlightSearchTermsOnTargetPage: true,
+        explicitSearchResultPath: true,
+        indexDocs: true,
+        indexBlog: false,
+        indexPages: false,
+        docsRouteBasePath: '/docs',
+        // Search placeholder text
+        searchBarShortcutHint: true,
+        searchBarPosition: 'right',
+      },
+    ],
+  ],
+
   themeConfig: {
     // Replace with your project's social card
     image: 'img/logo.png',
+    metadata: [
+      {name: 'keywords', content: 'llm, evaluation, testing, ai, machine learning, gemini, openai, anthropic, quality assurance'},
+      {name: 'description', content: 'Judge LLM is a lightweight Python framework for evaluating and comparing LLM providers with support for quality gates, parallel execution, and comprehensive reporting'},
+      {name: 'og:type', content: 'website'},
+      {name: 'twitter:card', content: 'summary_large_image'},
+    ],
     colorMode: {
       respectPrefersColorScheme: true,
     },
+    // Algolia search (optional - uncomment and configure if you want to use Algolia instead of local search)
+    // algolia: {
+    //   appId: 'YOUR_APP_ID',
+    //   apiKey: 'YOUR_SEARCH_API_KEY',
+    //   indexName: 'judge-llm',
+    //   contextualSearch: true,
+    //   searchParameters: {},
+    // },
     navbar: {
       title: 'Judge LLM',
       logo: {
@@ -146,6 +181,25 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
+      additionalLanguages: ['python', 'bash', 'yaml', 'json', 'typescript', 'javascript'],
+      magicComments: [
+        {
+          className: 'theme-code-block-highlighted-line',
+          line: 'highlight-next-line',
+          block: {start: 'highlight-start', end: 'highlight-end'},
+        },
+        {
+          className: 'code-block-error-line',
+          line: 'error-next-line',
+        },
+      ],
+    },
+    // Code block features
+    docs: {
+      sidebar: {
+        hideable: true,
+        autoCollapseCategories: true,
+      },
     },
   } satisfies Preset.ThemeConfig,
 };
