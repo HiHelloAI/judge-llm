@@ -292,13 +292,19 @@
             const expectedInv = expectedConversation[idx];
             const expectedResponse = expectedInv ? expectedInv.final_response.parts.map(p => p.text || '').join(' ') : '';
 
+            // Generate evaluator summary for this message
+            const evaluatorSummaryHTML = generateEvaluatorSummary(exec.evaluator_results);
+
             conversationHTML += `
                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                     <!-- User Message -->
                     <div class="bg-blue-50 dark:bg-blue-900/20 p-4">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="material-symbols-outlined text-blue-600 text-lg">person</span>
-                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">User</span>
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-blue-600 text-lg">person</span>
+                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">User</span>
+                            </div>
+                            ${evaluatorSummaryHTML}
                         </div>
                         <div class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">${userText}</div>
                     </div>
@@ -362,6 +368,44 @@
                 </div>
             </div>
         `;
+    }
+
+    function generateEvaluatorSummary(evaluatorResults) {
+        if (!evaluatorResults || evaluatorResults.length === 0) {
+            return '';
+        }
+
+        let summaryHTML = '<div class="flex items-center gap-1.5 flex-wrap">';
+
+        evaluatorResults.forEach(evalResult => {
+            const statusIcon = evalResult.passed ? '✓' : '✗';
+            const bgColor = evalResult.passed ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30';
+            const textColor = evalResult.passed ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300';
+            const borderColor = evalResult.passed ? 'border-green-300 dark:border-green-700' : 'border-red-300 dark:border-red-700';
+
+            // Build tooltip with score and threshold info
+            let tooltip = evalResult.evaluator_name;
+            if (evalResult.score !== null) {
+                tooltip += ` | Score: ${evalResult.score.toFixed(2)}`;
+            }
+            if (evalResult.threshold !== null) {
+                tooltip += ` | Threshold: ${evalResult.threshold}`;
+            }
+            if (evalResult.error) {
+                tooltip += ` | Error: ${evalResult.error}`;
+            }
+
+            summaryHTML += `
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border ${bgColor} ${textColor} ${borderColor} text-xs font-medium" title="${tooltip}">
+                    <span class="font-bold">${statusIcon}</span>
+                    <span>${evalResult.evaluator_name.replace('_evaluator', '').replace('_', ' ')}</span>
+                    ${evalResult.score !== null ? `<span class="opacity-75">: ${evalResult.score.toFixed(2)}</span>` : ''}
+                </span>
+            `;
+        });
+
+        summaryHTML += '</div>';
+        return summaryHTML;
     }
 
     function toggleEvaluatorDetails(idx) {
