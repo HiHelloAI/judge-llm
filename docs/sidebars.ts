@@ -46,6 +46,17 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: 'Providers',
+      items: [
+        'providers/overview',
+        'providers/gemini-provider',
+        'providers/mock-provider',
+        'providers/google-adk-provider',
+        'providers/custom-providers',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Evaluators',
       items: [
         'evaluators/overview',
