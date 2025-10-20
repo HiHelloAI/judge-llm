@@ -300,6 +300,42 @@ def _evaluate_from_config(config: Dict[str, Any], validate: bool = True) -> Eval
     for provider in providers:
         provider.cleanup()
 
+    # Check for threshold violations if fail_on_threshold_violation is enabled
+    fail_on_threshold_violation = agent_config.get("fail_on_threshold_violation", True)
+    if fail_on_threshold_violation and not report.overall_success:
+        failed_count = report.summary.get("failed_executions", 0)
+        total_count = report.summary.get("total_executions", 0)
+        error_msg = (
+            f"\n{'='*80}\n"
+            f"  THRESHOLD VIOLATION DETECTED\n"
+            f"{'='*80}\n\n"
+            f"❌ {failed_count}/{total_count} evaluation(s) failed to meet thresholds\n"
+            f"Success rate: {report.success_rate:.1%} (100% required)\n\n"
+            f"Failed evaluation cases:\n"
+        )
+
+        # List failed cases
+        for run in execution_runs:
+            if not run.overall_success:
+                error_msg += f"  • {run.eval_case_id} (run {run.run_number})"
+
+                # Show which evaluators failed
+                failed_evaluators = [e for e in run.evaluator_results if not e.passed]
+                if failed_evaluators:
+                    eval_names = ", ".join([e.evaluator_type for e in failed_evaluators])
+                    error_msg += f" - Failed: {eval_names}"
+                error_msg += "\n"
+
+        error_msg += (
+            f"\n{'='*80}\n"
+            f"💡 TIP: Set 'fail_on_threshold_violation: false' in agent config to continue\n"
+            f"        despite threshold violations (useful for monitoring/testing)\n"
+            f"{'='*80}\n"
+        )
+
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+
     logger.info("✓ Evaluation completed successfully")
 
     return report

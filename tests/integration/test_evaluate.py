@@ -167,7 +167,10 @@ class TestEvaluateIntegration:
         output_path = temp_dir / "report.json"
 
         config = {
-            "agent": {"num_runs": 1},
+            "agent": {
+                "num_runs": 1,
+                "fail_on_threshold_violation": False  # Allow failures for testing
+            },
             "dataset": {
                 "loader": "local_file",
                 "paths": [str(eval_set_path)]
@@ -218,7 +221,10 @@ class TestEvaluateIntegration:
         db_path = temp_dir / "results.db"
 
         config = {
-            "agent": {"num_runs": 1},
+            "agent": {
+                "num_runs": 1,
+                "fail_on_threshold_violation": False  # Allow failures for testing
+            },
             "dataset": {
                 "loader": "local_file",
                 "paths": [str(eval_set_path)]
@@ -318,7 +324,8 @@ class TestEvaluateIntegration:
             "agent": {
                 "num_runs": 1,
                 "parallel_execution": True,
-                "max_workers": 4
+                "max_workers": 4,
+                "fail_on_threshold_violation": False  # Allow failures for testing
             },
             "dataset": {
                 "loader": "local_file",
@@ -416,7 +423,10 @@ class TestEvaluateIntegration:
             json.dump(eval_set_data, f)
 
         config = {
-            "agent": {"num_runs": 1},
+            "agent": {
+                "num_runs": 1,
+                "fail_on_threshold_violation": False  # Allow failures for testing
+            },
             "dataset": {
                 "loader": "local_file",
                 "paths": [str(eval_set_path)]
@@ -455,3 +465,158 @@ class TestEvaluateIntegration:
         # Should raise appropriate error
         with pytest.raises(Exception):
             evaluate(config)
+
+    def test_fail_on_threshold_violation_enabled(self, temp_dir):
+        """Test that evaluation fails when fail_on_threshold_violation is enabled and thresholds are violated."""
+        # Create eval set with a case that will fail evaluation
+        eval_set_data = {
+            "eval_set_id": "threshold_test",
+            "name": "Threshold Violation Test",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": [
+                {
+                    "eval_id": "failing_case",
+                    "session_input": {"app_name": "test", "user_id": "user1"},
+                    "creation_timestamp": 1234567890.0,
+                    "conversation": [
+                        {
+                            "invocation_id": "inv1",
+                            "user_content": {
+                                "role": "user",
+                                "parts": [{"text": "What is 2+2?"}]
+                            },
+                            "final_response": {
+                                "role": "model",
+                                "parts": [{"text": "The answer is 4"}]  # Expected response
+                            },
+                            "intermediate_data": {"tool_uses": [], "intermediate_responses": []},
+                            "creation_timestamp": 1234567890.0
+                        }
+                    ]
+                }
+            ]
+        }
+
+        eval_set_path = temp_dir / "threshold_test.json"
+        with open(eval_set_path, "w") as f:
+            json.dump(eval_set_data, f)
+
+        # Create config with fail_on_threshold_violation enabled (default)
+        # Use exact match which will fail because mock provider returns the expected response as-is
+        # but we'll set a very high similarity threshold to force failure
+        config = {
+            "agent": {
+                "num_runs": 1,
+                "parallel_execution": False,
+                "fail_on_threshold_violation": True  # Explicitly enable
+            },
+            "dataset": {
+                "loader": "local_file",
+                "paths": [str(eval_set_path)]
+            },
+            "providers": [
+                {
+                    "name": "mock",
+                    "type": "mock",
+                    "agent_id": "test_agent",
+                }
+            ],
+            "evaluators": [
+                {
+                    "type": "response_evaluator",
+                    "config": {
+                        "match_type": "exact",
+                        "similarity_threshold": 1.0,  # Require exact match
+                        "case_sensitive": True  # Make it strict
+                    }
+                },
+                {
+                    "type": "cost_evaluator",
+                    "config": {
+                        "max_cost_per_case": 0.000001  # Set very low to force failure
+                    }
+                }
+            ],
+            "reporters": [{"type": "console"}]
+        }
+
+        # Should raise ValueError with threshold violation message
+        with pytest.raises(ValueError) as exc_info:
+            evaluate(config)
+
+        # Verify the error message contains expected information
+        assert "THRESHOLD VIOLATION" in str(exc_info.value)
+
+    def test_fail_on_threshold_violation_disabled(self, temp_dir):
+        """Test that evaluation continues when fail_on_threshold_violation is disabled."""
+        # Create eval set with a case that will fail evaluation
+        eval_set_data = {
+            "eval_set_id": "threshold_test",
+            "name": "Threshold Violation Test",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": [
+                {
+                    "eval_id": "failing_case",
+                    "session_input": {"app_name": "test", "user_id": "user1"},
+                    "creation_timestamp": 1234567890.0,
+                    "conversation": [
+                        {
+                            "invocation_id": "inv1",
+                            "user_content": {
+                                "role": "user",
+                                "parts": [{"text": "What is 2+2?"}]
+                            },
+                            "final_response": {
+                                "role": "model",
+                                "parts": [{"text": "The answer is 4"}]
+                            },
+                            "intermediate_data": {"tool_uses": [], "intermediate_responses": []},
+                            "creation_timestamp": 1234567890.0
+                        }
+                    ]
+                }
+            ]
+        }
+
+        eval_set_path = temp_dir / "threshold_test_disabled.json"
+        with open(eval_set_path, "w") as f:
+            json.dump(eval_set_data, f)
+
+        # Create config with fail_on_threshold_violation disabled
+        config = {
+            "agent": {
+                "num_runs": 1,
+                "parallel_execution": False,
+                "fail_on_threshold_violation": False  # Disable to allow failures
+            },
+            "dataset": {
+                "loader": "local_file",
+                "paths": [str(eval_set_path)]
+            },
+            "providers": [
+                {
+                    "name": "mock",
+                    "type": "mock",
+                    "agent_id": "test_agent",
+                }
+            ],
+            "evaluators": [
+                {
+                    "type": "cost_evaluator",
+                    "config": {
+                        "max_cost_per_case": 0.000001  # Set very low to force failure
+                    }
+                }
+            ],
+            "reporters": [{"type": "console"}]
+        }
+
+        # Should NOT raise an error - evaluation completes despite failures
+        report = evaluate(config)
+
+        # Verify report was generated
+        assert report is not None
+        assert len(report.execution_runs) > 0
+        # The report should show failure but not raise exception
+        assert report.overall_success == False  # Evaluation failed
+        assert report.success_rate < 1.0  # Success rate less than 100%

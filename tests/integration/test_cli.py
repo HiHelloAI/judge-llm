@@ -53,7 +53,10 @@ class TestCLI:
 
         # Create config file
         config = {
-            "agent": {"num_runs": 1},
+            "agent": {
+                "num_runs": 1,
+                "fail_on_threshold_violation": False  # Allow failures for testing
+            },
             "dataset": {
                 "loader": "local_file",
                 "paths": [str(eval_set_path)]
@@ -150,13 +153,13 @@ class TestCLI:
         assert 'evaluator' in result.output.lower() or 'response' in result.output.lower()
 
     def test_cli_list_reporters(self):
-        """Test list command with reporters (should not be supported)."""
+        """Test list command with reporters."""
         runner = CliRunner()
         result = runner.invoke(cli.list, ['reporters'])
 
-        # Reporters is not a valid argument for list command
-        # This test verifies the command properly rejects invalid arguments
-        assert result.exit_code == 2  # Exit code 2 for invalid CLI argument
+        # Reporters is a valid list command option
+        assert result.exit_code == 0
+        assert 'reporter' in result.output.lower() or 'console' in result.output.lower()
 
     def test_cli_dashboard_command(self, temp_dir):
         """Test dashboard command."""
@@ -196,7 +199,10 @@ class TestCLI:
             json.dump(eval_set_data, f)
 
         config = {
-            "agent": {"num_runs": 1},
+            "agent": {
+                "num_runs": 1,
+                "fail_on_threshold_violation": False  # Allow failures for testing
+            },
             "dataset": {
                 "loader": "local_file",
                 "paths": [str(eval_set_path)]
@@ -242,7 +248,10 @@ class TestCLI:
         output_path = temp_dir / "output.json"
 
         config = {
-            "agent": {"num_runs": 1},
+            "agent": {
+                "num_runs": 1,
+                "fail_on_threshold_violation": False  # Allow failures for testing
+            },
             "dataset": {
                 "loader": "local_file",
                 "paths": [str(eval_set_path)]

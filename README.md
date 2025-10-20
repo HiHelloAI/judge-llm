@@ -30,6 +30,7 @@ Perfect for regression testing, A/B testing providers, and ensuring production-g
 - **Registry System**: Register once in defaults, use everywhere by name
 - **Rich Reports**: Console tables, interactive HTML dashboard, JSON exports, SQLite database, plus custom reporters
 - **Parallel Execution**: Run evaluations concurrently with configurable workers
+- **Quality Gates**: Fail CI/CD builds when thresholds are violated (configurable)
 - **Config-Driven**: YAML configs with smart defaults or programmatic Python API
 - **Default Config**: Reusable configurations with component registration
 - **Per-Test Overrides**: Fine-tune evaluator thresholds per test case
@@ -144,6 +145,45 @@ reporters:
   - type: console
   - type: html
     output_path: ./report.html
+```
+
+**Advanced config with quality gates:**
+```yaml
+agent:
+  fail_on_threshold_violation: true  # Exit with error if evaluations fail (default: true)
+  parallel_execution: true            # Run tests in parallel
+  max_workers: 4                      # Number of parallel workers
+  num_runs: 3                         # Run each test 3 times
+
+dataset:
+  loader: local_file
+  paths: [./data/eval.yaml]
+
+providers:
+  - type: gemini
+    agent_id: production_agent
+    model: gemini-2.0-flash-exp
+
+evaluators:
+  - type: response_evaluator
+    config:
+      similarity_threshold: 0.85  # Minimum 85% similarity required
+  - type: cost_evaluator
+    config:
+      max_cost_per_case: 0.05      # Maximum $0.05 per test
+
+reporters:
+  - type: database
+    db_path: ./results.db  # Track results over time
+```
+
+**Use in CI/CD:**
+```bash
+# Fails with exit code 1 if any evaluator thresholds are violated
+judge-llm run --config ci-config.yaml
+
+# Or disable failures for monitoring
+# Set fail_on_threshold_violation: false in config
 ```
 
 **Dataset File Formats:**

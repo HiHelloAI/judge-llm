@@ -177,6 +177,114 @@ providers:
     api_key: ${CUSTOM_API_KEY}
 ```
 
+## Agent Configuration
+
+The `agent` section controls execution behavior and quality gates.
+
+```yaml
+agent:
+  num_runs: 1                           # Number of times to run each test case
+  parallel_execution: false             # Run tests in parallel
+  max_workers: 4                        # Max parallel workers (if parallel enabled)
+  fail_on_threshold_violation: true    # Exit with error if evaluations fail
+  validate_config: true                 # Validate configuration before running
+  log_level: INFO                       # Logging level (DEBUG|INFO|WARNING|ERROR)
+```
+
+### Configuration Options
+
+| Option | Description | Default | Type |
+|--------|-------------|---------|------|
+| `num_runs` | Number of times to execute each eval case | `1` | integer |
+| `parallel_execution` | Enable parallel execution of test cases | `false` | boolean |
+| `max_workers` | Maximum number of parallel worker threads | `4` | integer |
+| `fail_on_threshold_violation` | Exit with error code when evaluator thresholds are violated | `true` | boolean |
+| `validate_config` | Validate configuration before execution | `true` | boolean |
+| `log_level` | Logging verbosity level | `INFO` | string |
+
+### fail_on_threshold_violation
+
+**Purpose:** Controls whether the evaluation process should fail (exit with error code 1) when any evaluator thresholds are violated.
+
+**Use Cases:**
+
+**✅ When to enable (`fail_on_threshold_violation: true`):**
+- **CI/CD Pipelines**: Fail builds when LLM quality drops below thresholds
+- **Regression Testing**: Prevent deployments if model performance degrades
+- **Quality Gates**: Enforce minimum quality standards before production
+- **Pre-commit Hooks**: Block commits that violate quality thresholds
+
+```yaml
+# CI/CD configuration - fail on violations
+agent:
+  fail_on_threshold_violation: true  # Block deployments if quality drops
+
+evaluators:
+  - type: response_evaluator
+    config:
+      similarity_threshold: 0.85  # Minimum 85% similarity required
+  - type: cost_evaluator
+    config:
+      max_cost_per_case: 0.05     # Maximum $0.05 per test
+```
+
+**📊 When to disable (`fail_on_threshold_violation: false`):**
+- **Monitoring & Reporting**: Track metrics over time without failing
+- **Exploratory Testing**: Test new models/prompts without strict requirements
+- **Development**: Iterate quickly without strict quality gates
+- **Gradual Rollout**: Collect data before enforcing thresholds
+
+```yaml
+# Monitoring configuration - collect data without failing
+agent:
+  fail_on_threshold_violation: false  # Continue despite violations
+
+reporters:
+  - type: database
+    db_path: ./metrics.db  # Track trends over time
+```
+
+**Error Output Example:**
+
+When violations occur with `fail_on_threshold_violation: true`, you'll see:
+
+```
+================================================================================
+  THRESHOLD VIOLATION DETECTED
+================================================================================
+
+❌ 3/10 evaluation(s) failed to meet thresholds
+Success rate: 70.0% (100% required)
+
+Failed evaluation cases:
+  • test_001 (run 1) - Failed: response, cost
+  • test_003 (run 1) - Failed: latency
+  • test_007 (run 1) - Failed: trajectory
+
+================================================================================
+💡 TIP: Set 'fail_on_threshold_violation: false' in agent config to continue
+        despite threshold violations (useful for monitoring/testing)
+================================================================================
+```
+
+Exit code: `1` (failure)
+
+### Parallel Execution
+
+Enable parallel execution to speed up large test suites:
+
+```yaml
+agent:
+  parallel_execution: true
+  max_workers: 8  # Use 8 parallel threads
+  num_runs: 3     # Each test runs 3 times in parallel
+```
+
+**Performance Tips:**
+- Set `max_workers` based on your CPU cores (typically 2x cores)
+- Parallel execution reduces wall-clock time but not total execution time
+- Monitor memory usage with large test suites
+
 ## Evaluator Configuration
 
 The `evaluators` section defines how responses are evaluated.

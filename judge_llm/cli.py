@@ -176,10 +176,21 @@ def run(
 
         click.echo("\n✓ Evaluation completed successfully", err=False)
 
+    except ValueError as e:
+        # ValueError raised for threshold violations - error message already logged
+        # Check if this is a threshold violation error
+        if "THRESHOLD VIOLATION" in str(e):
+            # Error message already contains detailed info, don't duplicate
+            raise SystemExit(1)
+        else:
+            # Other ValueError - show the error
+            logger.error(f"Evaluation failed: {e}")
+            click.echo(f"\n✗ Evaluation failed: {e}", err=True)
+            raise SystemExit(1)
     except Exception as e:
         logger.error(f"Evaluation failed: {e}")
         click.echo(f"\n✗ Evaluation failed: {e}", err=True)
-        raise click.Abort()
+        raise SystemExit(1)
 
 
 @main.command()
