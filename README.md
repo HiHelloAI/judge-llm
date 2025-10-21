@@ -5,7 +5,7 @@
 
   A lightweight, extensible Python framework for **evaluating and comparing LLM providers**. Test your AI agents systematically with multi-turn conversations, cost tracking, and comprehensive reporting.
 
-  [Quick Start](#quick-start) • [Demo](#demo) • [Features](#features) • [Examples](#testing-examples) • [Reports](#reports--dashboard)
+  [Quick Start](#quick-start) • [Features](#features) • [Examples](#testing-examples) • [Reports](#reports--dashboard)
 </div>
 
 <div align="center">
@@ -24,7 +24,7 @@ Perfect for regression testing, A/B testing providers, and ensuring production-g
 
 ## Features
 
-- **Multiple Providers**: Gemini, Mock, and custom providers with registry-based extensibility
+- **Multiple Providers**: Gemini, Google ADK, Mock, and custom providers with registry-based extensibility
 - **Built-in Evaluators**: Response similarity, trajectory validation, cost/latency checks
 - **Custom Components**: Create and register custom providers, evaluators, and reporters
 - **Registry System**: Register once in defaults, use everywhere by name
@@ -57,6 +57,9 @@ pip install judge-llm
 ```bash
 # Install with Gemini provider support
 pip install judge-llm[gemini]
+
+# Install with Google ADK provider support
+pip install judge-llm[google_adk]
 
 # Install with dev dependencies
 pip install judge-llm[dev]
@@ -215,6 +218,28 @@ dataset:
   pattern: "*.yaml"  # or "*.json" or "*.yml"
 ```
 
+**Google ADK Provider Configuration:**
+
+For agents built with Google's Agent Development Kit (ADK):
+
+```yaml
+providers:
+  - type: google_adk
+    agent_id: my_adk_agent
+    agent_metadata:
+      module_path: "tool_agent.agent"  # Path to your agent module
+      agent_name: "root_agent"         # Agent variable name (default: "root_agent")
+      root_path: "."                   # Root path for imports (optional)
+```
+
+The ADK provider automatically:
+- Loads your ADK agent from the specified module
+- Converts between Judge LLM and ADK formats
+- Validates tool usage and conversation flow
+- Reports results in standard Judge LLM format
+
+See [examples/09-google-adk-agent/](examples/09-google-adk-agent/) for a complete working example.
+
 See the [examples/](examples/) directory for complete configuration examples including default configs, custom evaluators, and advanced features.
 
 ## Custom Component Registration
@@ -292,7 +317,7 @@ See [examples/default_config_reporters/](examples/default_config_reporters/) for
 
 ## Testing Examples
 
-Explore **8 complete examples** in the `examples/` directory:
+Explore **9 complete examples** in the `examples/` directory:
 
 | Example | Description |
 |---------|-------------|
@@ -304,6 +329,7 @@ Explore **8 complete examples** in the `examples/` directory:
 | **06-database-reporter** | SQLite persistence for historical tracking & trend analysis |
 | **custom_reporter_example** | Create custom reporters (CSV, programmatic registration) |
 | **default_config_reporters** | Register all custom components in defaults (providers, evaluators, reporters) |
+| **09-google-adk-agent** | Evaluate Google ADK agents with tool usage validation |
 
 Each example includes config files, datasets, and instructions. Run any example:
 
@@ -316,6 +342,7 @@ judge-llm run --config config.yaml
 
 ### Providers
 - **Gemini** - Google's Gemini models (requires `GOOGLE_API_KEY` in `.env`)
+- **Google ADK** - Google's Agent Development Kit for agentic workflows (requires `google-adk` package)
 - **Mock** - Built-in test provider, no setup required
 - **Custom** - Extend `BaseProvider` for your own LLM providers (OpenAI, Anthropic, etc.)
 
