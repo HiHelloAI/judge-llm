@@ -317,26 +317,54 @@ See [examples/default_config_reporters/](examples/default_config_reporters/) for
 
 ## Testing Examples
 
-Explore **9 complete examples** in the `examples/` directory:
+Explore **9 complete examples** in the `examples/` directory, from basic setup to advanced features:
 
-| Example | Description |
-|---------|-------------|
-| **01-gemini-agent** | Real Gemini API evaluation with response & trajectory checks |
-| **02-default-config** | Reusable config patterns with `.judge_llm.defaults.yaml` |
-| **03-custom-evaluator** | Build custom evaluators (sentiment analysis example) |
-| **04-safety-long-conversation** | Multi-turn safety evaluation (PII, toxicity, hate speech) |
-| **05-evaluator-config-override** | Per-test-case threshold overrides |
-| **06-database-reporter** | SQLite persistence for historical tracking & trend analysis |
-| **custom_reporter_example** | Create custom reporters (CSV, programmatic registration) |
-| **default_config_reporters** | Register all custom components in defaults (providers, evaluators, reporters) |
-| **09-google-adk-agent** | Evaluate Google ADK agents with tool usage validation |
+| Example | Description | Key Features |
+|---------|-------------|--------------|
+| **[01-gemini-agent](examples/01-gemini-agent/)** | Basic Gemini agent evaluation | Simple setup, response evaluation, CLI & Python API usage |
+| **[02-default-config](examples/02-default-config/)** | Using default configuration files | Config merging, `.judge_llm.defaults.yaml`, reducing duplication |
+| **[03-custom-evaluator](examples/03-custom-evaluator/)** | Creating custom evaluators | Extending `BaseEvaluator`, custom validation logic, registration |
+| **[04-safety-long-conversation](examples/04-safety-long-conversation/)** | Multi-turn safety evaluation | Long conversations, PII detection, toxicity analysis, LLM-as-judge |
+| **[05-evaluator-config-override](examples/05-evaluator-config-override/)** | Per-test-case evaluator overrides | Fine-grained threshold control, two-level configuration |
+| **[06-database-reporter](examples/06-database-reporter/)** | SQLite database reporter | Historical tracking, trend analysis, SQL queries, cost monitoring |
+| **[07-custom-reporter](examples/07-custom-reporter/)** | Creating custom reporters | CSV reporter example, config-based & programmatic registration |
+| **[08-default-config-reporters](examples/08-default-config-reporters/)** | Registering custom components | Register providers, evaluators, and reporters in defaults |
+| **[09-google-adk-agent](examples/09-google-adk-agent/)** | Google ADK agent evaluation | ADK integration, tool usage validation, agent module loading |
 
-Each example includes config files, datasets, and instructions. Run any example:
+### Running Examples
+
+Each example includes configuration files, datasets, and detailed instructions:
 
 ```bash
+# Navigate to any example
 cd examples/01-gemini-agent
+
+# Run via CLI
 judge-llm run --config config.yaml
+
+# Or run via Python script
+python run_evaluation.py
+
+# Or use the convenience shell script
+./run.sh
 ```
+
+### Example Categories
+
+**Getting Started:**
+- Start with **01-gemini-agent** for basic usage
+- Use **02-default-config** to learn configuration best practices
+
+**Customization:**
+- **03-custom-evaluator** - Build domain-specific evaluation logic
+- **07-custom-reporter** - Create custom output formats
+- **08-default-config-reporters** - Organize custom components
+
+**Advanced Features:**
+- **04-safety-long-conversation** - Production-ready safety evaluation with LLM-as-judge
+- **05-evaluator-config-override** - Fine-tune evaluations per test case
+- **06-database-reporter** - Track metrics over time with SQL queries
+- **09-google-adk-agent** - Evaluate Google ADK agents seamlessly
 
 ## Built-in Components
 
