@@ -67,3 +67,5 @@ tests/**/*.db
 *.whl
 reports/
 .claude/
+
+things-to-do.txt
