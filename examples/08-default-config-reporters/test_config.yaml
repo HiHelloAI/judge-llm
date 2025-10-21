@@ -1,0 +1,32 @@
+# Test Configuration
+# 
+# This config uses the custom reporters registered in .judge_llm.defaults.yaml
+# Notice how we can just use "type: csv" and "type: slack" directly!
+
+dataset:
+  loader: local_file
+  paths:
+    - ../../tests/data/simple_evalset.json
+
+providers:
+  - type: mock
+    agent_id: test_agent
+
+reporters:
+  # Use the registered CSV reporter (from defaults)
+  - type: csv
+    config:
+      output_path: ./evaluation_results.csv
+  
+  # Use the registered Slack reporter (from defaults)  
+  - type: slack
+    config:
+      webhook_url: ${SLACK_WEBHOOK_URL}
+      channel: "#llm-evaluations"
+      
+  # Use built-in console reporter
+  - type: console
+  
+  # Use built-in JSON reporter
+  - type: json
+    output_path: ./results.json

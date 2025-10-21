@@ -1,0 +1,79 @@
+# Default configuration for Judge LLM
+# This file will be automatically loaded if present in:
+# 1. Project directory: ./.judge_llm.defaults.yaml
+# 2. User home: ~/.judge_llm/defaults.yaml
+# 3. Custom path via JUDGE_LLM_DEFAULTS environment variable
+# 4. Custom path via config file: defaults: /path/to/defaults.yaml
+#
+# Test configs will override these defaults
+
+agent:
+  log_level: INFO
+  num_runs: 1
+  parallel_execution: false
+  max_workers: 4
+  fail_on_threshold_violation: true
+
+# Default providers - can be overridden in test configs
+# Uncomment the provider you want to use and configure with your API key
+providers:
+  - type: mock
+    agent_id: default_agent
+    model: mock-model-v1
+    temperature: 0.7
+
+  # Gemini Provider (requires: pip install "judge-llm[gemini]")
+  # - type: gemini
+  #   agent_id: gemini_agent
+  #   model: gemini-2.0-flash-exp
+  #   temperature: 0.7
+  #   max_tokens: 2048
+  #   top_p: 0.95
+  #   top_k: 40
+  #   # API key from environment: GEMINI_API_KEY
+
+  # OpenAI Provider (requires: pip install "judge-llm[openai]")
+  # - type: openai
+  #   agent_id: openai_agent
+  #   model: gpt-4-turbo-preview
+  #   temperature: 0.7
+  #   max_tokens: 2048
+  #   # API key from environment: OPENAI_API_KEY
+
+  # Anthropic/Claude Provider (requires: pip install "judge-llm[anthropic]")
+  # - type: anthropic
+  #   agent_id: claude_agent
+  #   model: claude-3-opus-20240229
+  #   temperature: 0.7
+  #   max_tokens: 2048
+  #   # API key from environment: ANTHROPIC_API_KEY
+
+# Default evaluators - applied to all tests unless overridden
+evaluators:
+  - type: response_evaluator
+    enabled: true
+    config:
+      similarity_threshold: 0.8
+      match_type: exact
+
+  - type: trajectory_evaluator
+    enabled: true
+    config:
+      sequence_match_type: exact
+      allow_partial_match: false
+
+  - type: cost_evaluator
+    enabled: true
+    config:
+      max_cost_per_case: 0.10
+      currency: USD
+
+  - type: latency_evaluator
+    enabled: true
+    config:
+      max_latency_seconds: 30
+      percentile: 100
+
+# Default reporters
+reporters:
+  - type: console

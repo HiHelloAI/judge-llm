@@ -1,0 +1,47 @@
+# Gemini Provider Example Configuration - Using YAML Dataset
+#
+# This example demonstrates how to use YAML format datasets with Judge LLM.
+# Make sure to set your GEMINI_API_KEY environment variable:
+#   export GEMINI_API_KEY="your-api-key-here"
+
+# Specify defaults file location
+defaults: ../.judge_llm.defaults.yaml
+
+agent:
+  name: gemini_news_agent
+  description: "News assistant using Google Gemini with YAML dataset"
+  log_level: INFO
+  num_runs: 1
+  parallel_execution: false
+  max_workers: 1
+
+dataset:
+  loader: local_file
+  paths:
+    - examples/01-gemini-agent/sample.evalset.yaml  # Using YAML format instead of JSON
+
+providers:
+  - type: gemini
+    agent_id: gemini_news_agent
+    model: gemini-2.0-flash-exp
+    temperature: 0.7
+    max_tokens: 2048
+    top_p: 0.95
+    top_k: 40
+
+evaluators:
+  - type: response_evaluator
+    enabled: true
+    config:
+      similarity_threshold: 0.7
+      match_type: semantic
+      case_sensitive: false
+
+  - type: trajectory_evaluator
+    enabled: true
+    config:
+      sequence_match_type: flexible
+      allow_extra_steps: true
+
+reporters:
+  - type: console

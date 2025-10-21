@@ -1,0 +1,220 @@
+{
+  "eval_set_id": "evaluator_config_override_demo",
+  "name": "Evaluator Config Override Examples",
+  "description": "Demonstrates how to override global evaluator config per test case",
+  "creation_timestamp": 1704067000.0,
+  "eval_cases": [
+    {
+      "eval_id": "test_001_uses_defaults",
+      "conversation": [
+        {
+          "invocation_id": "inv-001",
+          "user_content": {
+            "parts": [{"text": "What is machine learning?"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Machine learning is a type of artificial intelligence that allows computers to learn from data without being explicitly programmed."}],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067100.0
+        }
+      ],
+      "session_input": {
+        "app_name": "demo",
+        "user_id": "user1",
+        "user_prompt": "What is machine learning?",
+        "system_instruction": "You are a helpful AI assistant."
+      },
+      "creation_timestamp": 1704067100.0
+    },
+
+    {
+      "eval_id": "test_002_strict_exact_match",
+      "conversation": [
+        {
+          "invocation_id": "inv-002",
+          "user_content": {
+            "parts": [{"text": "Say 'Hello World' exactly"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Hello World"}],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067200.0
+        }
+      ],
+      "session_input": {
+        "app_name": "demo",
+        "user_id": "user2",
+        "user_prompt": "Say 'Hello World' exactly",
+        "system_instruction": "You are a helpful AI assistant."
+      },
+      "creation_timestamp": 1704067200.0,
+      "evaluator_config": {
+        "ResponseEvaluator": {
+          "match_type": "exact",
+          "similarity_threshold": 1.0,
+          "case_sensitive": true,
+          "normalize_whitespace": false
+        }
+      }
+    },
+
+    {
+      "eval_id": "test_003_lenient_creative",
+      "conversation": [
+        {
+          "invocation_id": "inv-003",
+          "user_content": {
+            "parts": [{"text": "Write a creative story about a robot"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Once upon a time, there was a friendly robot named Rob who loved to explore the galaxy and make new friends on distant planets."}],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067300.0
+        }
+      ],
+      "session_input": {
+        "app_name": "demo",
+        "user_id": "user3",
+        "user_prompt": "Write a creative story about a robot",
+        "system_instruction": "You are a creative writing assistant."
+      },
+      "creation_timestamp": 1704067300.0,
+      "evaluator_config": {
+        "ResponseEvaluator": {
+          "match_type": "recall",
+          "similarity_threshold": 0.3
+        }
+      }
+    },
+
+    {
+      "eval_id": "test_004_high_precision_factual",
+      "conversation": [
+        {
+          "invocation_id": "inv-004",
+          "user_content": {
+            "parts": [{"text": "What is the capital of France?"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "The capital of France is Paris."}],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067400.0
+        }
+      ],
+      "session_input": {
+        "app_name": "demo",
+        "user_id": "user4",
+        "user_prompt": "What is the capital of France?",
+        "system_instruction": "You are a factual knowledge assistant."
+      },
+      "creation_timestamp": 1704067400.0,
+      "evaluator_config": {
+        "ResponseEvaluator": {
+          "match_type": "rouge",
+          "similarity_threshold": 0.85
+        }
+      }
+    },
+
+    {
+      "eval_id": "test_005_fast_latency_required",
+      "conversation": [
+        {
+          "invocation_id": "inv-005",
+          "user_content": {
+            "parts": [{"text": "Quick question: what is 2+2?"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "4"}],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067500.0
+        }
+      ],
+      "session_input": {
+        "app_name": "demo",
+        "user_id": "user5",
+        "user_prompt": "Quick question: what is 2+2?",
+        "system_instruction": "You are a helpful AI assistant."
+      },
+      "creation_timestamp": 1704067500.0,
+      "evaluator_config": {
+        "LatencyEvaluator": {
+          "max_latency_seconds": 5,
+          "warn_threshold_seconds": 2
+        },
+        "ResponseEvaluator": {
+          "match_type": "exact",
+          "similarity_threshold": 1.0
+        }
+      }
+    },
+
+    {
+      "eval_id": "test_006_expensive_operation_allowed",
+      "conversation": [
+        {
+          "invocation_id": "inv-006",
+          "user_content": {
+            "parts": [{"text": "Analyze this complex data and provide insights: [large dataset]"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Based on the analysis of the provided dataset, here are the key insights: 1) Trend shows upward growth. 2) Seasonal patterns detected. 3) Outliers identified in Q3."}],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067600.0
+        }
+      ],
+      "session_input": {
+        "app_name": "demo",
+        "user_id": "user6",
+        "user_prompt": "Analyze this complex data and provide insights",
+        "system_instruction": "You are a data analysis assistant."
+      },
+      "creation_timestamp": 1704067600.0,
+      "evaluator_config": {
+        "CostEvaluator": {
+          "max_cost_per_case": 0.50
+        },
+        "LatencyEvaluator": {
+          "max_latency_seconds": 120,
+          "warn_threshold_seconds": 60
+        }
+      }
+    }
+  ]
+}

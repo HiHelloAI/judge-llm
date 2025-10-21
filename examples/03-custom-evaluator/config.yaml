@@ -1,0 +1,38 @@
+# Specify defaults file location
+defaults: ../.judge_llm.defaults.yaml
+
+agent:
+  name: gemini_news_agent
+  description: "News assistant using Google Gemini"
+
+dataset:
+  loader: local_file
+  paths:
+    - ./sample.evalset.json
+
+providers:
+  - type: gemini
+    agent_id: gemini_news_agent
+    model: gemini-2.0-flash-exp
+    temperature: 0.7
+    max_tokens: 2048
+    top_p: 0.95
+    top_k: 40
+
+evaluators:
+  # Custom evaluator loaded from Python file
+  - type: custom
+    module_path: ./evaluators/sentiment_evaluator.py
+    class_name: SentimentEvaluator
+    enabled: true
+    config:
+      min_positive_sentiment: 0.3
+
+reporters:
+  - type: console
+
+  - type: json
+    output_path: "../../reports/03-custom-evaluator/gemini_report.json"
+
+  - type: html
+    output_path: "../../reports/03-custom-evaluator/gemini_report.html"

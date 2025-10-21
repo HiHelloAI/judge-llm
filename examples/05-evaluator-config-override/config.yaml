@@ -1,0 +1,64 @@
+# Evaluator Config Override Example
+#
+# This example demonstrates how to use evaluator_config in evalset files
+# to override global evaluator settings on a per-test-case basis.
+#
+# Key concept: Global defaults in config.yaml can be overridden by
+# per-test-case settings in the evalset.json file.
+
+defaults: ../.judge_llm.defaults.yaml
+
+agent:
+  name: evaluator_config_demo
+  description: "Demo agent showing evaluator config overrides"
+  log_level: INFO
+  num_runs: 1
+  parallel_execution: false
+
+dataset:
+  loader: local_file
+  paths:
+    - ./test_cases.evalset.json
+
+providers:
+  - type: gemini
+    agent_id: evaluator_config_demo
+    model: gemini-2.0-flash-exp
+    temperature: 0.7
+    max_tokens: 1024
+
+evaluators:
+  # Global ResponseEvaluator config - applies to all tests by default
+  - type: response_evaluator
+    enabled: true
+    config:
+      # GLOBAL DEFAULTS - used unless overridden by per-test evaluator_config
+      similarity_threshold: 0.6    # Default: 60% similarity required
+      match_type: semantic          # Default: use ROUGE/semantic matching
+      case_sensitive: false         # Default: ignore case
+      normalize_whitespace: true    # Default: normalize whitespace
+
+  # Global LatencyEvaluator config
+  - type: latency_evaluator
+    enabled: true
+    config:
+      # GLOBAL DEFAULTS
+      max_latency_seconds: 30       # Default: max 30 seconds
+      warn_threshold_seconds: 10    # Default: warn above 10 seconds
+
+  # Global CostEvaluator config
+  - type: cost_evaluator
+    enabled: true
+    config:
+      # GLOBAL DEFAULTS
+      max_cost_per_case: 0.10       # Default: max $0.10 per test
+      currency: USD
+
+reporters:
+  - type: console
+
+  - type: json
+    output_path: "../../reports/05-evaluator-config-override/report.json"
+
+  - type: html
+    output_path: "../../reports/05-evaluator-config-override/report.html"

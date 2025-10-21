@@ -1,0 +1,52 @@
+# Database Reporter Example Configuration
+#
+# This example demonstrates how to use the database reporter to store
+# evaluation results in a SQLite database for comprehensive analysis.
+#
+# The database reporter:
+# - Auto-creates the database and tables if they don't exist
+# - Appends results to existing database (preserves history)
+# - Enables querying historical results, trends, and comparisons
+#
+# Make sure to set your GEMINI_API_KEY environment variable:
+#   export GEMINI_API_KEY="your-api-key-here"
+
+# Specify defaults file location
+defaults: ../.judge_llm.defaults.yaml
+
+agent:
+  name: math_tutor_agent
+  description: "Math tutoring assistant using Google Gemini"
+
+dataset:
+  loader: local_file
+  paths:
+    - ./math_questions.evalset.json
+
+providers:
+  - type: gemini
+    agent_id: math_tutor_agent
+    model: gemini-2.0-flash-exp
+    temperature: 0.3  # Lower temperature for more consistent math answers
+    max_tokens: 1024
+
+evaluators:
+  # Enable response evaluator to check if responses match expected answers
+  - type: response_evaluator
+    enabled: true
+    threshold: 0.85
+
+execution:
+  num_runs: 2  # Run each test case twice to track consistency
+
+reporters:
+  # Console reporter for real-time feedback
+  - type: console
+
+  # Database reporter to store results for analysis
+  - type: database
+    db_path: "../../reports/06-database-reporter/results.db"
+
+  # HTML reporter for visual inspection
+  - type: html
+    output_path: "../../reports/06-database-reporter/report.html"

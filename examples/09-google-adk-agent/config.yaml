@@ -1,0 +1,67 @@
+# Google ADK Provider Example Configuration
+#
+# This example demonstrates how to use the Google ADK provider with Judge LLM.
+# The ADK provider loads agents built with Google's Agent Development Kit.
+#
+# Make sure to set your GOOGLE_API_KEY environment variable:
+#   export GOOGLE_API_KEY="your-api-key-here"
+
+# Specify defaults file location
+defaults: ../.judge_llm.defaults.yaml
+
+agent:
+  name: adk_tool_agent
+  description: "Tool-using agent built with Google ADK"
+  log_level: INFO
+  num_runs: 1
+  parallel_execution: true
+  max_workers: 5
+
+dataset:
+  loader: local_file
+  paths:
+    - ./sample.evalset.yaml
+
+providers:
+  - type: google_adk
+    agent_id: adk_tool_agent
+    agent_metadata:
+      # Module path to the agent (relative to root_path or in PYTHONPATH)
+      module_path: "tool_agent.agent"
+      # Variable name of the agent in the module
+      agent_name: "root_agent"
+      # Root path to add to sys.path (defaults to current directory)
+      root_path: "."
+      # Optional: module prefix if agent is in a package
+      # module_prefix: "examples.09-google-adk-agent"
+      # Optional: custom submodule name (default: 'agent')
+      # agent_submodule: "agent"
+
+evaluators:
+  - type: response_evaluator
+    enabled: true
+    config:
+      similarity_threshold: 0.6
+      match_type: semantic
+      case_sensitive: false
+
+  - type: trajectory_evaluator
+    enabled: true
+    config:
+      sequence_match_type: flexible
+      allow_extra_steps: true
+
+  - type: latency_evaluator
+    enabled: true
+    config:
+      max_latency_seconds: 30
+      warn_threshold_seconds: 10
+
+reporters:
+  - type: console
+
+  - type: json
+    output_path: "../../reports/09-google-adk-agent/adk_report.json"
+
+  - type: html
+    output_path: "../../reports/09-google-adk-agent/adk_report.html"

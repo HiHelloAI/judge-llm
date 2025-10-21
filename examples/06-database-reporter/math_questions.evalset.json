@@ -1,0 +1,156 @@
+{
+  "eval_set_id": "math_tutor_eval_v1",
+  "name": "Math Tutor Evaluation",
+  "description": "Test cases for evaluating math tutoring assistant",
+  "creation_timestamp": 1704067000.0,
+  "eval_cases": [
+    {
+      "eval_id": "math_001",
+      "conversation": [
+        {
+          "invocation_id": "math-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What is 15 + 27?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "15 + 27 = 42"
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067200.0
+        }
+      ],
+      "session_input": {
+        "app_name": "math_tutor",
+        "user_id": "student_001",
+        "state": {},
+        "user_prompt": "What is 15 + 27?",
+        "system_instruction": "You are a helpful math tutor. Provide clear, accurate answers to math questions. Show your work when appropriate."
+      },
+      "creation_timestamp": 1704067200.0
+    },
+    {
+      "eval_id": "math_002",
+      "conversation": [
+        {
+          "invocation_id": "math-002",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Solve for x: 2x + 5 = 13"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "To solve 2x + 5 = 13:\n\nStep 1: Subtract 5 from both sides\n2x = 8\n\nStep 2: Divide both sides by 2\nx = 4\n\nTherefore, x = 4"
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067300.0
+        }
+      ],
+      "session_input": {
+        "app_name": "math_tutor",
+        "user_id": "student_001",
+        "state": {},
+        "user_prompt": "Solve for x: 2x + 5 = 13",
+        "system_instruction": "You are a helpful math tutor. Provide clear, accurate answers to math questions. Show your work when appropriate."
+      },
+      "creation_timestamp": 1704067300.0
+    },
+    {
+      "eval_id": "math_003",
+      "conversation": [
+        {
+          "invocation_id": "math-003",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What is the area of a circle with radius 5?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "The area of a circle is calculated using the formula: A = πr²\n\nWith radius r = 5:\nA = π × 5²\nA = π × 25\nA = 25π\nA ≈ 78.54 square units\n\nSo the area is 25π or approximately 78.54 square units."
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067400.0
+        }
+      ],
+      "session_input": {
+        "app_name": "math_tutor",
+        "user_id": "student_002",
+        "state": {},
+        "user_prompt": "What is the area of a circle with radius 5?",
+        "system_instruction": "You are a helpful math tutor. Provide clear, accurate answers to math questions. Show your work when appropriate."
+      },
+      "creation_timestamp": 1704067400.0
+    },
+    {
+      "eval_id": "math_004",
+      "conversation": [
+        {
+          "invocation_id": "math-004",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What is 144 ÷ 12?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "144 ÷ 12 = 12"
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1704067500.0
+        }
+      ],
+      "session_input": {
+        "app_name": "math_tutor",
+        "user_id": "student_002",
+        "state": {},
+        "user_prompt": "What is 144 ÷ 12?",
+        "system_instruction": "You are a helpful math tutor. Provide clear, accurate answers to math questions. Show your work when appropriate."
+      },
+      "creation_timestamp": 1704067500.0
+    }
+  ]
+}

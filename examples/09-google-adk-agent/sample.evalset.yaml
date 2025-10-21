@@ -1,0 +1,158 @@
+eval_set_id: "adk_tool_agent_evalset_001"
+name: "ADK Tool Agent Evaluation Set"
+description: "Test cases for evaluating Google ADK tool-using agent with weather, calculator, search, and formatting capabilities"
+creation_timestamp: 1697500000.0
+
+eval_cases:
+  - eval_id: "weather_query"
+    creation_timestamp: 1697500100.0
+    session_input:
+      app_name: "tool_agent_test"
+      user_id: "test_user_001"
+      state: {}
+    conversation:
+      - invocation_id: "inv_001"
+        user_content:
+          role: "user"
+          parts:
+            - text: "What's the weather in San Francisco?"
+        final_response:
+          role: "model"
+          parts:
+            - text: "San Francisco: 65°F and partly cloudy."
+        intermediate_data:
+          tool_uses:
+            - id: "tool_001"
+              name: "get_weather"
+              args:
+                location: "San Francisco"
+                units: "fahrenheit"
+          intermediate_responses: []
+        creation_timestamp: 1697500100.0
+
+  - eval_id: "calculator_basic"
+    creation_timestamp: 1697500200.0
+    session_input:
+      app_name: "tool_agent_test"
+      user_id: "test_user_002"
+      state: {}
+    conversation:
+      - invocation_id: "inv_002"
+        user_content:
+          role: "user"
+          parts:
+            - text: "What is 15 multiplied by 7?"
+        final_response:
+          role: "model"
+          parts:
+            - text: "15 multiplied by 7 equals 105."
+        intermediate_data:
+          tool_uses:
+            - id: "tool_002"
+              name: "calculator"
+              args:
+                operation: "multiply"
+                a: 15
+                b: 7
+          intermediate_responses: []
+        creation_timestamp: 1697500200.0
+
+  - eval_id: "multi_turn_weather_and_calc"
+    creation_timestamp: 1697500300.0
+    session_input:
+      app_name: "tool_agent_test"
+      user_id: "test_user_003"
+      state: {}
+    conversation:
+      - invocation_id: "inv_003a"
+        user_content:
+          role: "user"
+          parts:
+            - text: "What's the weather in Tokyo?"
+        final_response:
+          role: "model"
+          parts:
+            - text: "Tokyo: 68°F and clear."
+        intermediate_data:
+          tool_uses:
+            - id: "tool_003a"
+              name: "get_weather"
+              args:
+                location: "Tokyo"
+                units: "fahrenheit"
+          intermediate_responses: []
+        creation_timestamp: 1697500300.0
+
+      - invocation_id: "inv_003b"
+        user_content:
+          role: "user"
+          parts:
+            - text: "Now calculate 100 divided by 4"
+        final_response:
+          role: "model"
+          parts:
+            - text: "100 divided by 4 equals 25."
+        intermediate_data:
+          tool_uses:
+            - id: "tool_003b"
+              name: "calculator"
+              args:
+                operation: "divide"
+                a: 100
+                b: 4
+          intermediate_responses: []
+        creation_timestamp: 1697500310.0
+
+  - eval_id: "current_time"
+    creation_timestamp: 1697500400.0
+    session_input:
+      app_name: "tool_agent_test"
+      user_id: "test_user_004"
+      state: {}
+    conversation:
+      - invocation_id: "inv_004"
+        user_content:
+          role: "user"
+          parts:
+            - text: "What time is it now?"
+        final_response:
+          role: "model"
+          parts:
+            - text: "The current time is"
+        intermediate_data:
+          tool_uses:
+            - id: "tool_004"
+              name: "get_current_time"
+              args: {}
+          intermediate_responses: []
+        creation_timestamp: 1697500400.0
+    evaluator_config:
+      response_evaluator:
+        similarity_threshold: 0.5
+        match_type: "contains"
+
+  - eval_id: "weather_celsius"
+    creation_timestamp: 1697500500.0
+    session_input:
+      app_name: "tool_agent_test"
+      user_id: "test_user_005"
+      state: {}
+    conversation:
+      - invocation_id: "inv_005"
+        user_content:
+          role: "user"
+          parts:
+            - text: "What's the weather in London in Celsius?"
+        final_response:
+          role: "model"
+          parts:
+            - text: "London: 12°C and rainy."
+        intermediate_data:
+          tool_uses:
+            - id: "tool_005"
+              name: "get_weather"
+              args:
+                location: "London"
+                units: "celsius"
+          intermediate_responses: []
+        creation_timestamp: 1697500500.0

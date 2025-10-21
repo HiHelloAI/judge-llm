@@ -1,0 +1,116 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "judge-llm"
+version = "1.0.0"
+description = "A lightweight LLM evaluation framework for comparing and testing AI providers"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "CC-BY-NC-SA-4.0" }
+authors = [
+    { name = "Ilayanambi", email = "hihelloai@yahoo.com" }
+]
+keywords = ["llm", "evaluation", "testing", "ai", "gemini", "openai", "claude"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0",
+    "jinja2>=3.1.0",
+    "click>=8.1.0",
+    "httpx>=0.25.0",
+    "rich>=13.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+google_adk = [
+    "google-adk==1.16.0",
+    "google-adk[eval]==1.16.0",
+    "rouge-score"
+]
+
+gemini = [
+    "google-genai>=0.1.0",
+]
+
+openai = [
+    "openai>=1.0.0",
+]
+
+anthropic = [
+    "anthropic>=0.7.0",
+]
+
+all = [
+    "google-genai>=0.1.0",
+    "openai>=1.0.0",
+    "anthropic>=0.7.0",
+]
+
+[project.scripts]
+judge-llm = "judge_llm.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/HiHelloAI/judge-llm"
+Documentation = "https://github.com/HiHelloAI/judge-llm#readme"
+Repository = "https://github.com/HiHelloAI/judge-llm"
+Issues = "https://github.com/HiHelloAI/judge-llm/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["judge_llm*"]
+exclude = ["tests*", "examples*"]
+
+[tool.setuptools.package-data]
+judge_llm = ["templates/*.html", "templates/*.j2"]
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--showlocals",
+]
+markers = [
+    "unit: Unit tests for individual components",
+    "integration: Integration tests for end-to-end workflows",
+    "slow: Tests that take a long time to run",
+    "requires_api: Tests that require external API access",
+    "database: Tests that use database functionality",
+]

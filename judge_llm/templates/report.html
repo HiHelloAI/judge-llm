@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Judge LLM - Evaluation Report</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d7ff2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101922",
+                        "sidebar-light": "#e9eef2",
+                        "sidebar-dark": "#182430",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-gray-800 dark:text-gray-200">
+<div class="flex h-screen flex-col">
+    <!-- Page Header -->
+    <header class="flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-background-light dark:bg-background-dark px-6 shadow-sm">
+        <div class="flex items-center gap-4">
+            <h1 class="text-xl font-bold">Judge LLM Evaluation Report</h1>
+            <a href="https://github.com/HiHelloAI/judge-llm" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-500 dark:text-gray-400 hover:text-primary flex items-center gap-1">
+                <span>⭐</span>
+                <span>Star on GitHub</span>
+            </a>
+        </div>
+        <div class="flex items-center gap-4 text-sm">
+            <span id="overall-status" class="font-bold"></span>
+            <div class="flex items-center gap-3 text-xs">
+                <span class="text-gray-600 dark:text-gray-400">Executions: <span id="total-executions" class="font-semibold text-gray-800 dark:text-gray-200"></span></span>
+                <span class="text-gray-400">•</span>
+                <span class="text-gray-600 dark:text-gray-400">Success Rate: <span id="success-rate" class="font-semibold text-gray-800 dark:text-gray-200"></span></span>
+                <span class="text-gray-400">•</span>
+                <span class="text-gray-600 dark:text-gray-400">Cost: <span id="total-cost" class="font-semibold text-gray-800 dark:text-gray-200"></span></span>
+                <span class="text-gray-400">•</span>
+                <span class="text-gray-600 dark:text-gray-400">Time: <span id="total-time" class="font-semibold text-gray-800 dark:text-gray-200"></span></span>
+            </div>
+            <span id="generated-at" class="text-xs text-gray-500 dark:text-gray-400"></span>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Left Sidebar - Execution List -->
+        <aside class="w-80 flex-shrink-0 bg-sidebar-light dark:bg-sidebar-dark p-4 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+            <!-- Search Bar -->
+            <div class="mb-4">
+                <div class="relative">
+                    <input
+                        type="text"
+                        id="search-input"
+                        placeholder="Search executions..."
+                        class="w-full px-4 py-2 pl-10 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        oninput="filterExecutions()"
+                    />
+                    <span class="material-symbols-outlined absolute left-3 top-2 text-gray-400 text-lg">search</span>
+                </div>
+            </div>
+
+            <!-- Execution List -->
+            <div class="flex-1 overflow-y-auto">
+                <h2 class="px-3 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-2">Executions</h2>
+                <div id="execution-list" class="space-y-1"></div>
+            </div>
+        </aside>
+
+        <!-- Main Panel - Execution Details -->
+        <main class="flex flex-1 flex-col bg-background-light dark:bg-background-dark overflow-hidden">
+            <!-- Summary Bar -->
+            <div id="summary-bar" class="hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
+                <div class="flex items-center justify-between text-sm">
+                    <span id="summary-text" class="text-gray-700 dark:text-gray-300"></span>
+                </div>
+            </div>
+
+            <div id="main-content" class="flex-1 overflow-y-auto p-6">
+                <div class="text-center text-gray-500 dark:text-gray-400 py-20">
+                    <p class="text-lg">Select an execution from the left to view details</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    // Embedded report data
+    const reportData = {{ report_data }};
+
+    // Initialize the report
+    function initializeReport() {
+        // Set overall status
+        const overallStatus = document.getElementById('overall-status');
+        if (reportData.overall_success) {
+            overallStatus.textContent = '✓ PASSED';
+            overallStatus.className = 'font-bold text-green-600';
+        } else {
+            overallStatus.textContent = '✗ FAILED';
+            overallStatus.className = 'font-bold text-red-600';
+        }
+
+        // Set generated at
+        document.getElementById('generated-at').textContent =
+            `Generated: ${new Date(reportData.generated_at).toLocaleString()}`;
+
+        // Set summary
+        document.getElementById('total-executions').textContent = reportData.execution_runs.length;
+        document.getElementById('success-rate').textContent =
+            `${(reportData.success_rate * 100).toFixed(1)}%`;
+        document.getElementById('total-cost').textContent =
+            `$${reportData.total_cost.toFixed(4)}`;
+        document.getElementById('total-time').textContent =
+            `${reportData.total_time.toFixed(2)}s`;
+
+        // Render execution list
+        renderExecutionList();
+    }
+
+    function renderExecutionList(filteredData = null) {
+        const list = document.getElementById('execution-list');
+        list.innerHTML = '';
+
+        const dataToRender = filteredData || reportData.execution_runs;
+
+        dataToRender.forEach((exec, index) => {
+            const item = document.createElement('div');
+            item.className = 'flex cursor-pointer items-center gap-2 rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700/50 transition-colors';
+            item.setAttribute('data-execution-index', index);
+            item.onclick = () => showExecutionDetails(index);
+
+            const statusIcon = exec.overall_success ? '✓' : '✗';
+            const statusColor = exec.overall_success ? 'text-green-500' : 'text-red-500';
+            const passedCount = exec.evaluator_results.filter(e => e.passed).length;
+            const totalCount = exec.evaluator_results.length;
+
+            item.innerHTML = `
+                <div class="flex-shrink-0 ${statusColor} font-bold text-lg">${statusIcon}</div>
+                <div class="flex-1 overflow-hidden min-w-0">
+                    <div class="flex items-center justify-between gap-1 mb-0.5">
+                        <h3 class="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">${exec.eval_case_id}</h3>
+                        <span class="flex-shrink-0 text-xs text-gray-500 dark:text-gray-400">#${exec.run_number}</span>
+                    </div>
+                    <p class="truncate text-xs text-gray-600 dark:text-gray-400">
+                        ${passedCount}/${totalCount} passed • ${exec.provider_result.time_taken.toFixed(1)}s • $${exec.provider_result.cost.toFixed(4)}
+                    </p>
+                </div>
+            `;
+
+            list.appendChild(item);
+        });
+
+        if (dataToRender.length === 0) {
+            list.innerHTML = '<div class="text-center text-sm text-gray-500 dark:text-gray-400 py-4">No executions found</div>';
+        }
+    }
+
+    function filterExecutions() {
+        const searchInput = document.getElementById('search-input');
+        const searchTerm = searchInput.value.toLowerCase().trim();
+
+        if (!searchTerm) {
+            renderExecutionList();
+            return;
+        }
+
+        const filtered = reportData.execution_runs.filter((exec, index) => {
+            const searchText = `
+                ${exec.eval_case_id}
+                ${exec.execution_id}
+                ${exec.provider_type}
+                ${exec.run_number}
+                ${exec.evaluator_results.map(e => e.evaluator_name).join(' ')}
+            `.toLowerCase();
+
+            return searchText.includes(searchTerm);
+        });
+
+        renderExecutionList(filtered);
+    }
+
+    function showExecutionDetails(index) {
+        const exec = reportData.execution_runs[index];
+        const mainContent = document.getElementById('main-content');
+        const summaryBar = document.getElementById('summary-bar');
+        const summaryText = document.getElementById('summary-text');
+
+        // Update summary bar
+        const passedCount = exec.evaluator_results.filter(e => e.passed).length;
+        const totalCount = exec.evaluator_results.length;
+        const statusIcon = exec.overall_success ? '✓' : '✗';
+        const statusColor = exec.overall_success ? 'text-green-600' : 'text-red-600';
+
+        summaryText.innerHTML = `
+            <span class="${statusColor} font-bold">${statusIcon}</span>
+            <span class="ml-2">${exec.eval_case_id}</span>
+            <span class="mx-2">•</span>
+            <span>${passedCount}/${totalCount} evaluators passed</span>
+            <span class="mx-2">•</span>
+            <span>${exec.provider_result.time_taken.toFixed(2)}s</span>
+            <span class="mx-2">•</span>
+            <span>$${exec.provider_result.cost.toFixed(4)}</span>
+        `;
+        summaryBar.classList.remove('hidden');
+
+        // Build evaluator results table/grid
+        let evaluatorHTML = `
+            <div class="overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-900">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Evaluator</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Score</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Threshold</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+        `;
+
+        exec.evaluator_results.forEach((evalResult, idx) => {
+            const passedClass = evalResult.passed ? 'text-green-600' : 'text-red-600';
+            const passedIcon = evalResult.passed ? '✓' : '✗';
+            const passedBg = evalResult.passed ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20';
+
+            evaluatorHTML += `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${evalResult.evaluator_name}</td>
+                    <td class="px-4 py-3">
+                        <span class="${passedClass} font-bold inline-flex items-center px-2.5 py-0.5 rounded-full text-xs ${passedBg}">
+                            ${passedIcon} ${evalResult.passed ? 'PASSED' : 'FAILED'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">${evalResult.evaluator_type}</td>
+                    <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        ${evalResult.score !== null ? evalResult.score.toFixed(2) : 'N/A'}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                        ${evalResult.threshold !== null ? evalResult.threshold : 'N/A'}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="toggleEvaluatorDetails(${idx})"
+                                class="text-primary hover:text-blue-700 text-sm font-medium">
+                            View Details
+                        </button>
+                    </td>
+                </tr>
+                <tr id="evaluator-details-${idx}" class="hidden">
+                    <td colspan="6" class="px-4 py-4 bg-gray-50 dark:bg-gray-900">
+                        <div class="text-sm">
+                            <h5 class="font-semibold mb-2 text-gray-900 dark:text-gray-100">Details:</h5>
+                            <pre class="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700 overflow-x-auto text-xs">${JSON.stringify(evalResult.details, null, 2)}</pre>
+                            ${evalResult.error ? `
+                                <div class="mt-2">
+                                    <h5 class="font-semibold text-red-600 mb-1">Error:</h5>
+                                    <p class="text-red-500 text-xs">${evalResult.error}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        evaluatorHTML += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        // Build conversation HTML with side-by-side comparison
+        let conversationHTML = '<div class="space-y-6">';
+
+        // Get expected conversation from the original eval_case (not provider_result!)
+        const evalCase = exec.eval_case;
+        const expectedConversation = evalCase ? evalCase.conversation : [];
+
+        exec.provider_result.conversation_history.forEach((inv, idx) => {
+            const userText = inv.user_content.parts.map(p => p.text || '').join(' ');
+            const actualResponse = inv.final_response.parts.map(p => p.text || '').join(' ');
+
+            // Get expected response from the original eval case
+            const expectedInv = expectedConversation[idx];
+            const expectedResponse = expectedInv ? expectedInv.final_response.parts.map(p => p.text || '').join(' ') : '';
+
+            // Generate evaluator summary for this message
+            const evaluatorSummaryHTML = generateEvaluatorSummary(exec.evaluator_results);
+
+            conversationHTML += `
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <!-- User Message -->
+                    <div class="bg-blue-50 dark:bg-blue-900/20 p-4">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-blue-600 text-lg">person</span>
+                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">User</span>
+                            </div>
+                            ${evaluatorSummaryHTML}
+                        </div>
+                        <div class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">${userText}</div>
+                    </div>
+
+                    <!-- Response Comparison -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-gray-700">
+                        <!-- Actual Response -->
+                        <div class="p-4 overflow-hidden">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-purple-600 text-lg">smart_toy</span>
+                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Actual Response</span>
+                                </div>
+                                ${getResponseScore(exec, idx)}
+                            </div>
+                            <div class="text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 p-3 rounded whitespace-pre-wrap overflow-x-auto max-w-full">${actualResponse}</div>
+                            ${inv.intermediate_data.tool_uses.length > 0 ? `
+                                <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                    <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Tools Used:</div>
+                                    <div class="flex flex-wrap gap-1">
+                                        ${inv.intermediate_data.tool_uses.map(t => `
+                                            <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                                                ${t.name}
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Expected Response -->
+                        <div class="p-4 overflow-hidden">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-green-600 text-lg">check_circle</span>
+                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Expected Response</span>
+                                </div>
+                            </div>
+                            <div class="text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 p-3 rounded whitespace-pre-wrap overflow-x-auto max-w-full">${expectedResponse && expectedResponse.trim() ? expectedResponse.trim() : '<em class="text-gray-500">No expected response defined</em>'}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        conversationHTML += '</div>';
+
+        mainContent.innerHTML = `
+            <div class="max-w-7xl mx-auto">
+                <!-- Evaluator Results -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="text-xl font-bold">Evaluator Results</h3>
+                    </div>
+                    ${evaluatorHTML}
+                </div>
+
+                <!-- Conversation History -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h3 class="text-xl font-bold mb-4">Conversation History</h3>
+                    ${conversationHTML}
+                </div>
+            </div>
+        `;
+    }
+
+    function generateEvaluatorSummary(evaluatorResults) {
+        if (!evaluatorResults || evaluatorResults.length === 0) {
+            return '';
+        }
+
+        let summaryHTML = '<div class="flex items-center gap-1.5 flex-wrap">';
+
+        evaluatorResults.forEach(evalResult => {
+            const statusIcon = evalResult.passed ? '✓' : '✗';
+            const bgColor = evalResult.passed ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30';
+            const textColor = evalResult.passed ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300';
+            const borderColor = evalResult.passed ? 'border-green-300 dark:border-green-700' : 'border-red-300 dark:border-red-700';
+
+            // Build tooltip with score and threshold info
+            let tooltip = evalResult.evaluator_name;
+            if (evalResult.score !== null) {
+                tooltip += ` | Score: ${evalResult.score.toFixed(2)}`;
+            }
+            if (evalResult.threshold !== null) {
+                tooltip += ` | Threshold: ${evalResult.threshold}`;
+            }
+            if (evalResult.error) {
+                tooltip += ` | Error: ${evalResult.error}`;
+            }
+
+            summaryHTML += `
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border ${bgColor} ${textColor} ${borderColor} text-xs font-medium" title="${tooltip}">
+                    <span class="font-bold">${statusIcon}</span>
+                    <span>${evalResult.evaluator_name.replace('_evaluator', '').replace('_', ' ')}</span>
+                    ${evalResult.score !== null ? `<span class="opacity-75">: ${evalResult.score.toFixed(2)}</span>` : ''}
+                </span>
+            `;
+        });
+
+        summaryHTML += '</div>';
+        return summaryHTML;
+    }
+
+    function toggleEvaluatorDetails(idx) {
+        const detailsRow = document.getElementById(`evaluator-details-${idx}`);
+        detailsRow.classList.toggle('hidden');
+    }
+
+    function getResponseScore(exec, invocationIdx) {
+        // Try to find score from evaluators for this specific invocation
+        // This is a simplified version - adjust based on your actual data structure
+        const scores = exec.evaluator_results
+            .filter(e => e.score !== null)
+            .map(e => e.score);
+
+        if (scores.length > 0) {
+            const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+            const scoreColor = avgScore >= 0.7 ? 'text-green-600' : avgScore >= 0.4 ? 'text-yellow-600' : 'text-red-600';
+            return `<span class="${scoreColor} text-xs font-semibold">Score: ${avgScore.toFixed(2)}</span>`;
+        }
+        return '';
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', initializeReport);
+</script>
+</body>
+</html>
