@@ -14,7 +14,7 @@ load_dotenv()
 
 
 @click.group()
-@click.version_option(version="0.1.0")
+@click.version_option(version="1.0.3")
 def main():
     """Judge LLM - A lightweight LLM evaluation framework"""
     pass

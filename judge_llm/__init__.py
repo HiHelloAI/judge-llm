@@ -12,8 +12,9 @@ from judge_llm.loaders.base import BaseLoader
 from judge_llm.providers.base import BaseProvider
 from judge_llm.evaluators.base import BaseEvaluator
 from judge_llm.reporters.base import BaseReporter
+from judge_llm.cli import main
 
-__version__ = "0.1.0"
+__version__ = "1.0.3"
 __all__ = [
     "evaluate",
     "register_evaluator",
