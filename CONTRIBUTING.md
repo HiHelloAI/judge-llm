@@ -553,10 +553,6 @@ If you have questions about contributing:
 - Create a new issue with the "question" label
 - Reach out to maintainers
 
-## Recognition
-
-All contributors will be recognized in the project. Thank you for helping make Judge LLM better!
-
 ---
 
 **Happy Contributing!** 🎉
