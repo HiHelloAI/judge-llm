@@ -127,7 +127,7 @@ dataset:
 
 ### Examples
 
-See [examples/01-gemini-agent/](https://github.com/yourusername/judge-llm/tree/main/examples/01-gemini-agent) for complete examples in both JSON and YAML formats.
+See [examples/01-gemini-agent/](https://github.com/HiHelloAI/judge-llm/tree/main/examples/01-gemini-agent) for complete examples in both JSON and YAML formats.
 
 ## Validation
 

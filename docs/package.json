@@ -19,7 +19,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/judge-llm.git",
+    "url": "https://github.com/HiHelloAI/judge-llm.git",
     "directory": "docs"
   },
   "scripts": {

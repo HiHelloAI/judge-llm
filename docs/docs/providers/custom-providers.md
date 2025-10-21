@@ -427,5 +427,5 @@ def execute(self, eval_case: EvalCase) -> ProviderResult:
 ## Next Steps
 
 - See examples in `examples/custom_reporter_example/`
-- Review [BaseProvider source code](https://github.com/yourusername/judge-llm/blob/main/judge_llm/providers/base.py)
+- Review [BaseProvider source code](https://github.com/HiHelloAI/judge-llm/blob/main/judge_llm/providers/base.py)
 - Check [Gemini Provider](./gemini-provider) as a reference implementation

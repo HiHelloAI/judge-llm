@@ -337,7 +337,7 @@ evaluators:
 
 See the complete safety evaluator in Example 04:
 
-[examples/04-safety-long-conversation/evaluators/safety_evaluator.py](https://github.com/yourusername/judge-llm/tree/main/examples/04-safety-long-conversation/evaluators/safety_evaluator.py)
+[examples/04-safety-long-conversation/evaluators/safety_evaluator.py](https://github.com/HiHelloAI/judge-llm/tree/main/examples/04-safety-long-conversation/evaluators/safety_evaluator.py)
 
 Features:
 - PII detection (email, phone, SSN, credit cards)
@@ -550,5 +550,5 @@ def test_length_validator_integration():
 ## Example Gallery
 
 Find more custom evaluator examples in:
-- [examples/04-safety-long-conversation/](https://github.com/yourusername/judge-llm/tree/main/examples/04-safety-long-conversation)
-- [examples/03-custom-evaluator/](https://github.com/yourusername/judge-llm/tree/main/examples/03-custom-evaluator)
+- [examples/04-safety-long-conversation/](https://github.com/HiHelloAI/judge-llm/tree/main/examples/04-safety-long-conversation)
+- [examples/03-custom-evaluator/](https://github.com/HiHelloAI/judge-llm/tree/main/examples/03-custom-evaluator)

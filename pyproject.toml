@@ -73,10 +73,10 @@ all = [
 judge-llm = "judge_llm.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/judge-llm"
-Documentation = "https://github.com/yourusername/judge-llm#readme"
-Repository = "https://github.com/yourusername/judge-llm"
-Issues = "https://github.com/yourusername/judge-llm/issues"
+Homepage = "https://github.com/HiHelloAI/judge-llm"
+Documentation = "https://github.com/HiHelloAI/judge-llm#readme"
+Repository = "https://github.com/HiHelloAI/judge-llm"
+Issues = "https://github.com/HiHelloAI/judge-llm/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

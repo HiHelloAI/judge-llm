@@ -130,5 +130,5 @@ Learn more in the [Configuration Guide](./guides/configuration), [Evaluators](./
 
 - 📚 Browse the [documentation](./guides/basic-usage)
 - 💡 Check out [examples](./examples/overview)
-- 🐛 Report issues on [GitHub](https://github.com/yourusername/judge-llm/issues)
+- 🐛 Report issues on [GitHub](https://github.com/HiHelloAI/judge-llm/issues)
 - 🤝 Read the [configuration guide](./guides/configuration)

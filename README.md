@@ -41,7 +41,7 @@ Perfect for regression testing, A/B testing providers, and ensuring production-g
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/judge-llm.git
+git clone https://github.com/HiHelloAI/judge-llm.git
 cd judge-llm
 pip install -e .
 ```

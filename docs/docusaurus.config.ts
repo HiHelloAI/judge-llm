@@ -43,7 +43,7 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           editUrl:
-            'https://github.com/yourusername/judge-llm/tree/main/docs/',
+            'https://github.com/HiHelloAI/judge-llm/tree/main/docs/',
         },
         blog: false, // Disable blog
         theme: {
@@ -119,7 +119,7 @@ const config: Config = {
           label: 'API',
         },
         {
-          href: 'https://github.com/yourusername/judge-llm',
+          href: 'https://github.com/HiHelloAI/judge-llm',
           label: 'GitHub',
           position: 'right',
         },
@@ -167,11 +167,11 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/yourusername/judge-llm',
+              href: 'https://github.com/HiHelloAI/judge-llm',
             },
             {
               label: 'Issues',
-              href: 'https://github.com/yourusername/judge-llm/issues',
+              href: 'https://github.com/HiHelloAI/judge-llm/issues',
             },
           ],
         },
