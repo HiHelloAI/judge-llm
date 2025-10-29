@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import importlib
 import logging
+import os
 import sys
 import threading
 import time
@@ -17,7 +18,7 @@ from typing import Any, Dict, Optional
 
 from google.adk.agents.llm_agent import LlmAgent
 from google.adk.artifacts.in_memory_artifact_service import InMemoryArtifactService
-from google.adk.evaluation.eval_case import get_all_tool_calls
+from google.adk.evaluation.eval_case import IntermediateDataType, InvocationEvents
 from google.adk.evaluation.evaluation_generator import EvaluationGenerator
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
 from google.genai import types as genai_types
@@ -41,11 +42,11 @@ class GoogleADKProvider(BaseProvider):
     """Provider implementation for Google ADK."""
 
     def __init__(
-        self,
-        agent_id: str,
-        agent_config_path: Optional[str] = None,
-        agent_metadata: Optional[Dict[str, Any]] = None,
-        **provider_metadata,
+            self,
+            agent_id: str,
+            agent_config_path: Optional[str] = None,
+            agent_metadata: Optional[Dict[str, Any]] = None,
+            **provider_metadata,
     ):
         """Initialize ADK provider.
 
@@ -134,8 +135,11 @@ class GoogleADKProvider(BaseProvider):
 
         # Add root_path to sys.path if specified
         root_path = self.agent_metadata.get("root_path") or self.agent_config_path
-        if root_path and root_path not in sys.path:
-            sys.path.insert(0, root_path)
+        if root_path:
+            # Get complete absolute path by combining with current working directory
+            complete_path = os.path.abspath(os.path.join(os.getcwd(), root_path))
+            if complete_path not in sys.path:
+                sys.path.insert(0, complete_path)
 
         # Apply module prefix if specified
         if prefix := self.agent_metadata.get("module_prefix"):
@@ -208,7 +212,7 @@ class GoogleADKProvider(BaseProvider):
             # Extract tool uses
             tool_uses = []
             if adk_inv.intermediate_data:
-                tool_calls = get_all_tool_calls(adk_inv.intermediate_data)
+                tool_calls = self.get_all_tool_calls(adk_inv.intermediate_data)
                 tool_uses = [
                     ToolUse(
                         id=getattr(tc, 'id', str(uuid.uuid4())),
@@ -268,3 +272,55 @@ class GoogleADKProvider(BaseProvider):
                     parts.append(Part(**part_dict))
 
         return Content(parts=parts, role=getattr(adk_content, 'role', default_role))
+
+    def get_all_tool_calls(self,
+                           intermediate_data: Optional[IntermediateDataType],
+                           ) -> list[genai_types.FunctionCall]:
+        """A utility method to retrieve tools calls from intermediate data."""
+        if not intermediate_data:
+            return []
+
+        tool_calls = []
+        if isinstance(intermediate_data, IntermediateData):
+            tool_calls = intermediate_data.tool_uses
+        elif isinstance(intermediate_data, InvocationEvents):
+            # Go over each event in the list of events
+            for invocation_event in intermediate_data.invocation_events:
+                # Check if the event has content and some parts.
+                if invocation_event.content and invocation_event.content.parts:
+                    for p in invocation_event.content.parts:
+                        # For each part, we check if any of those part is a function call.
+                        if p.function_call:
+                            tool_calls.append(p.function_call)
+        else:
+            raise ValueError(
+                f"Unsupported type for intermediate_data `{intermediate_data}`"
+            )
+
+        return tool_calls
+
+    def get_all_tool_responses(self,
+                               intermediate_data: Optional[IntermediateDataType],
+                               ) -> list[genai_types.FunctionResponse]:
+        """A utility method to retrieve tools responses from intermediate data."""
+        if not intermediate_data:
+            return []
+
+        tool_responses = []
+        if isinstance(intermediate_data, IntermediateData):
+            tool_responses = intermediate_data.tool_responses
+        elif isinstance(intermediate_data, InvocationEvents):
+            # Go over each event in the list of events
+            for invocation_event in intermediate_data.invocation_events:
+                # Check if the event has content and some parts.
+                if invocation_event.content and invocation_event.content.parts:
+                    for p in invocation_event.content.parts:
+                        # For each part, we check if any of those part is a function response.
+                        if p.function_response:
+                            tool_responses.append(p.function_response)
+        else:
+            raise ValueError(
+                f"Unsupported type for intermediate_data `{intermediate_data}`"
+            )
+
+        return tool_responses
