@@ -1,0 +1,159 @@
+# ADK HTTP Travel Agent Evaluation Set
+#
+# Test cases for evaluating a travel agent via ADK HTTP endpoint.
+# Includes tests for:
+# - Basic travel queries
+# - Multi-agent handoffs (TravelCoordinator -> TravelSearchExpert)
+# - Tool usage (GoogleSearchAgent, transfer_to_agent)
+
+eval_set_id: "adk_http_travel_agent_v1"
+name: "ADK HTTP Travel Agent Evaluation"
+description: "Test cases for evaluating travel agent via ADK HTTP endpoint with multi-agent orchestration"
+creation_timestamp: 1704067000.0
+
+eval_cases:
+  # Test 1: Simple travel query with agent transfer
+  - eval_id: "travel_search_001"
+    creation_timestamp: 1704067100.0
+    session_input:
+      app_name: "my_agent3"
+      user_id: "user"
+      state: {}
+      system_instruction: "You are a helpful travel planning assistant that can search for flights, hotels, and attractions."
+    conversation:
+      - invocation_id: "inv_001"
+        user_content:
+          role: "user"
+          parts:
+            - text: "I'm planning a trip from New Jersey to Orlando for Disney World. What are my options?"
+        # Expected final response (actual will be compared using semantic similarity)
+        final_response:
+          role: "model"
+          parts:
+            - text: "I found several travel options from New Jersey to Orlando including flights, trains, and driving routes. Flights are the quickest option taking around 3 hours."
+        # Expected tool usage trajectory
+        intermediate_data:
+          tool_uses:
+            - id: "tool_001"
+              name: "transfer_to_agent"
+              args:
+                agent_name: "TravelSearchExpert"
+            - id: "tool_002"
+              name: "GoogleSearchAgent"
+              args:
+                request: "travel options from New Jersey to Orlando"
+          intermediate_responses: []
+        creation_timestamp: 1704067100.0
+
+  # Test 2: Multi-turn conversation
+  - eval_id: "travel_multi_turn_001"
+    creation_timestamp: 1704067200.0
+    session_input:
+      app_name: "my_agent3"
+      user_id: "user"
+      state: {}
+    conversation:
+      # Turn 1: Initial query
+      - invocation_id: "inv_002a"
+        user_content:
+          role: "user"
+          parts:
+            - text: "Find me flights from San Francisco to Tokyo next week"
+        final_response:
+          role: "model"
+          parts:
+            - text: "I found several flight options from San Francisco to Tokyo for next week."
+        intermediate_data:
+          tool_uses:
+            - id: "tool_003"
+              name: "transfer_to_agent"
+              args:
+                agent_name: "TravelSearchExpert"
+            - id: "tool_004"
+              name: "GoogleSearchAgent"
+              args:
+                request: "flights from San Francisco to Tokyo"
+          intermediate_responses: []
+        creation_timestamp: 1704067200.0
+
+      # Turn 2: Follow-up query
+      - invocation_id: "inv_002b"
+        user_content:
+          role: "user"
+          parts:
+            - text: "What about hotels near Shibuya?"
+        final_response:
+          role: "model"
+          parts:
+            - text: "I found several hotels near Shibuya station in Tokyo."
+        intermediate_data:
+          tool_uses:
+            - id: "tool_005"
+              name: "GoogleSearchAgent"
+              args:
+                request: "hotels near Shibuya Tokyo"
+          intermediate_responses: []
+        creation_timestamp: 1704067201.0
+
+  # Test 3: Restaurant recommendations
+  - eval_id: "restaurant_search_001"
+    creation_timestamp: 1704067300.0
+    session_input:
+      app_name: "my_agent3"
+      user_id: "user"
+      state: {}
+    conversation:
+      - invocation_id: "inv_003"
+        user_content:
+          role: "user"
+          parts:
+            - text: "What are the best restaurants near Disney World in Orlando?"
+        final_response:
+          role: "model"
+          parts:
+            - text: "Here are some highly-rated restaurants near Disney World including The BOATHOUSE at Disney Springs and Chef Art Smith's Homecomin'."
+        intermediate_data:
+          tool_uses:
+            - id: "tool_006"
+              name: "GoogleSearchAgent"
+              args:
+                request: "best restaurants near Disney World Orlando"
+          intermediate_responses: []
+        creation_timestamp: 1704067300.0
+    # Per-case evaluator config override
+    evaluator_config:
+      response_evaluator:
+        similarity_threshold: 0.5  # Lower threshold for this test
+
+  # Test 4: Attractions search with detailed response
+  - eval_id: "attractions_search_001"
+    creation_timestamp: 1704067400.0
+    session_input:
+      app_name: "my_agent3"
+      user_id: "user"
+      state: {}
+    conversation:
+      - invocation_id: "inv_004"
+        user_content:
+          role: "user"
+          parts:
+            - text: "What attractions are there near Disney World besides the theme parks?"
+        final_response:
+          role: "model"
+          parts:
+            - text: "There are many attractions near Disney World including Universal Orlando Resort, SeaWorld Orlando, ICON Park, and Disney Springs for shopping and dining."
+        intermediate_data:
+          tool_uses:
+            - id: "tool_007"
+              name: "transfer_to_agent"
+              args:
+                agent_name: "TravelSearchExpert"
+            - id: "tool_008"
+              name: "GoogleSearchAgent"
+              args:
+                request: "attractions near Disney World Orlando"
+          intermediate_responses:
+            - type: "agent_transfer"
+              from_agent: "TravelCoordinator"
+              to_agent: "TravelSearchExpert"
+        creation_timestamp: 1704067400.0

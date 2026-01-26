@@ -1,0 +1,139 @@
+# ADK HTTP Provider Example Configuration
+#
+# This example demonstrates how to use the ADK HTTP provider with Judge LLM.
+# The provider connects to remote ADK endpoints that stream SSE responses.
+#
+# Prerequisites:
+# 1. A running ADK HTTP endpoint (e.g., ADK Agent Server)
+# 2. Set ADK_API_KEY environment variable if authentication is required
+
+defaults: ../.judge_llm.defaults.yaml
+
+agent:
+  name: adk_http_travel_agent
+  description: "Travel agent accessible via ADK HTTP endpoint"
+  log_level: INFO
+  num_runs: 1
+  parallel_execution: false
+  max_workers: 4
+
+dataset:
+  loader: local_file
+  paths:
+    - ./sample.evalset.yaml
+
+providers:
+  - type: adk_http
+    agent_id: travel_agent_http
+
+    # ADK HTTP Endpoint URL (required)
+    # This should point to your ADK agent's run endpoint
+    endpoint_url: "http://127.0.0.1:8000/run"
+
+    # Authentication (choose one approach)
+    # Options: bearer, api_key, basic, none
+    auth_type: bearer
+    # api_key can also be set via ADK_API_KEY environment variable
+    # api_key: "${ADK_API_KEY}"
+
+    # For api_key auth type, customize the header name:
+    # auth_header: "X-API-Key"
+
+    # For basic auth:
+    # auth_type: basic
+    # username: "user"
+    # password: "pass"
+
+    # Request configuration
+    timeout: 60
+    retry_attempts: 3
+    retry_delay: 1
+    verify_ssl: true
+
+    # Session configuration
+    user_id: user
+    app_name: my_agent3
+
+    # Model name (used for cost calculation)
+    model: gemini-2.0-flash
+
+    # Custom pricing (optional) - override default pricing
+    # custom_pricing:
+    #   custom-model-v1:
+    #     input: 0.10   # $ per 1M input tokens
+    #     output: 0.50  # $ per 1M output tokens
+
+evaluators:
+  # Evaluate response quality (text similarity)
+  - type: response_evaluator
+    enabled: true
+    config:
+      similarity_threshold: 0.6
+      match_type: semantic
+      case_sensitive: false
+      normalize_whitespace: true
+
+  # Evaluate tool usage trajectory (with argument comparison)
+  - type: trajectory_evaluator
+    enabled: true
+    config:
+      sequence_match_type: flexible
+      compare_arguments: true
+      argument_match_type: fuzzy
+      argument_similarity_threshold: 0.7
+      allow_extra_tools: true
+      tool_name_match: exact
+      min_score_threshold: 0.5
+
+  # Evaluate sub-agent transfer chains
+  - type: subagent_evaluator
+    enabled: true
+    config:
+      sequence_match_type: contains
+      allow_extra_agents: true
+      min_match_ratio: 0.5
+
+  # Evaluate response latency
+  - type: latency_evaluator
+    enabled: true
+    config:
+      max_latency_seconds: 30
+      warn_threshold_seconds: 10
+
+  # Evaluate cost
+  - type: cost_evaluator
+    enabled: true
+    config:
+      max_cost_per_case: 0.05
+      currency: USD
+
+  # LLM-as-Judge evaluation (requires GOOGLE_API_KEY)
+  # Uncomment to enable - uses Gemini to evaluate relevance, hallucination, quality
+  # - type: llm_judge_evaluator
+  #   enabled: true
+  #   config:
+  #     model: gemini-2.0-flash
+  #     evaluation_type: comprehensive  # relevance, hallucination, quality, factuality, comprehensive
+  #     min_score: 3.0  # 1-5 scale
+  #     temperature: 0.0
+
+  # Embedding similarity evaluation (requires GOOGLE_API_KEY)
+  # Uncomment to enable - uses embeddings for semantic similarity
+  # - type: embedding_similarity_evaluator
+  #   enabled: true
+  #   config:
+  #     provider: gemini  # gemini, openai, sentence_transformers
+  #     model: text-embedding-004
+  #     similarity_threshold: 0.75
+
+reporters:
+  # Console output
+  - type: console
+
+  # JSON report for programmatic access
+  - type: json
+    output_path: "../../reports/10-adk-http-agent/report.json"
+
+  # HTML dashboard
+  - type: html
+    output_path: "../../reports/10-adk-http-agent/report.html"

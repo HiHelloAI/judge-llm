@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "judge-llm"
-version = "1.0.3"
+version = "1.0.5"
 description = "A lightweight LLM evaluation framework for comparing and testing AI providers"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -34,6 +34,7 @@ dependencies = [
     "httpx>=0.25.0",
     "rich>=13.0.0",
     "python-dotenv>=1.0.0",
+    "dotenv>=0.9.9",
 ]
 
 [project.optional-dependencies]

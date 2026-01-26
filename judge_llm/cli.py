@@ -284,6 +284,7 @@ def list(entity):
 )
 def dashboard(db, output, no_browser):
     """Generate and launch evaluation dashboard"""
+    import base64
     import shutil
     import webbrowser
     from pathlib import Path
@@ -303,7 +304,30 @@ def dashboard(db, output, no_browser):
         output_file = Path(output).expanduser().resolve()
         output_file.parent.mkdir(parents=True, exist_ok=True)
 
-        shutil.copy(template_path, output_file)
+        if db:
+            # Embed the database into the HTML so it auto-loads
+            db_path = Path(db).resolve()
+            click.echo(f"📊 Embedding database: {db_path} ({db_path.stat().st_size / 1024:.1f} KB)")
+
+            with open(db_path, "rb") as f:
+                db_bytes = f.read()
+            db_base64 = base64.b64encode(db_bytes).decode("ascii")
+
+            with open(template_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+
+            # Inject a script tag before </body> that auto-loads the embedded DB
+            auto_load_script = f"""
+<script>
+    // Auto-load embedded database
+    var EMBEDDED_DB_BASE64 = "{db_base64}";
+</script>"""
+            html_content = html_content.replace("</body>", auto_load_script + "\n</body>")
+
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(html_content)
+        else:
+            shutil.copy(template_path, output_file)
 
         click.echo("=" * 80)
         click.echo("✅ Dashboard Generated Successfully!")
@@ -312,13 +336,14 @@ def dashboard(db, output, no_browser):
         click.echo(f"📁 Dashboard: {output_file}")
 
         if db:
-            click.echo(f"📊 Database: {Path(db).resolve()}")
+            click.echo(f"📊 Database: {Path(db).resolve()} (embedded - auto-loads)")
+        else:
+            click.echo()
+            click.echo("📖 How to use:")
+            click.echo("   1. Dashboard will open in your browser")
+            click.echo("   2. Drag and drop your .db file (or click to browse)")
+            click.echo("   3. Explore your evaluation results!")
 
-        click.echo()
-        click.echo("📖 How to use:")
-        click.echo("   1. Dashboard will open in your browser")
-        click.echo("   2. Drag and drop your .db file (or click to browse)")
-        click.echo("   3. Explore your evaluation results!")
         click.echo()
         click.echo("🔒 Privacy: All data stays local - no uploads or external services")
         click.echo()

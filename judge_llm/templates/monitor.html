@@ -657,6 +657,35 @@
             }
         }
 
+        async function loadDatabaseFromBytes(uint8Array) {
+            try {
+                const content = document.getElementById('content');
+                content.innerHTML = '<div class="upload-prompt"><div class="loading"></div><div class="upload-prompt-text" style="margin-top:16px">Loading embedded database...</div></div>';
+
+                const SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+                });
+
+                db = new SQL.Database(uint8Array);
+                loadView(currentView);
+            } catch (error) {
+                console.error('Error loading embedded database:', error);
+                alert('Error loading embedded database: ' + error.message);
+            }
+        }
+
+        // Auto-load embedded database if present (injected by CLI --db flag)
+        window.addEventListener('DOMContentLoaded', function() {
+            if (typeof EMBEDDED_DB_BASE64 !== 'undefined' && EMBEDDED_DB_BASE64) {
+                const binaryString = atob(EMBEDDED_DB_BASE64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                loadDatabaseFromBytes(bytes);
+            }
+        });
+
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', function() {
@@ -1599,7 +1628,7 @@
 
             try {
                 const result = db.exec(`
-                    SELECT evaluator_name, evaluator_type, success, passed, score, threshold, error
+                    SELECT evaluator_name, evaluator_type, success, passed, score, threshold, error, details_json
                     FROM evaluator_results
                     WHERE execution_id = ?
                 `, [execId]);
@@ -1609,8 +1638,8 @@
                 if (result && result.length > 0 && result[0].values.length > 0) {
                     const evaluators = result[0];
                     let evalHtml = '<div style="font-size:12px;">';
-                    evaluators.values.forEach(e => {
-                        const [name, type, success, passed, score, threshold, error] = e;
+                    evaluators.values.forEach((e, idx) => {
+                        const [name, type, success, passed, score, threshold, error, detailsJson] = e;
 
                         // Build score display string safely
                         let scoreDisplay = '';
@@ -1620,12 +1649,25 @@
                             scoreDisplay = `<br><span style="color:#666;">Score: ${score.toFixed(2)}</span>`;
                         }
 
+                        // Parse details JSON
+                        let detailsHtml = '';
+                        if (detailsJson) {
+                            const detailId = `eval-detail-${execId}-${idx}`;
+                            detailsHtml = `
+                                <br><a href="#" onclick="event.preventDefault(); var el=document.getElementById('${detailId}'); el.style.display=el.style.display==='none'?'block':'none';" style="color:#0d7ff2;font-size:11px;text-decoration:none;">View Details ▾</a>
+                                <div id="${detailId}" style="display:none;margin-top:8px;">
+                                    <pre style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:8px;overflow:auto;max-height:400px;font-size:11px;white-space:pre-wrap;word-break:break-word;">${(() => { try { return JSON.stringify(JSON.parse(detailsJson), null, 2); } catch(e) { return detailsJson; } })()}</pre>
+                                </div>
+                            `;
+                        }
+
                         evalHtml += `
                             <div style="padding:8px; background:#f9f9f9; border:1px solid #e0e0e0; border-radius:4px; margin-bottom:8px;">
                                 <strong>${name || 'Unknown'}</strong> (${type || 'Unknown'})
                                 <span class="status-badge ${passed ? 'status-success' : 'status-error'}">${passed ? '✓ Pass' : '✗ Fail'}</span>
                                 ${scoreDisplay}
                                 ${error ? `<br><span style="color:#c41e3a;">${error}</span>` : ''}
+                                ${detailsHtml}
                             </div>
                         `;
                     });
@@ -1780,7 +1822,7 @@
 
             try {
                 const result = db.exec(`
-                    SELECT evaluator_name, evaluator_type, success, passed, score, threshold, error
+                    SELECT evaluator_name, evaluator_type, success, passed, score, threshold, error, details_json
                     FROM evaluator_results
                     WHERE execution_id = ?
                 `, [execId]);
@@ -1790,8 +1832,8 @@
                 if (result && result.length > 0 && result[0].values.length > 0) {
                     const evaluators = result[0];
                     let evalHtml = '<div style="font-size:12px;">';
-                    evaluators.values.forEach(e => {
-                        const [name, type, success, passed, score, threshold, error] = e;
+                    evaluators.values.forEach((e, idx) => {
+                        const [name, type, success, passed, score, threshold, error, detailsJson] = e;
 
                         // Build score display string safely
                         let scoreDisplay = '';
@@ -1801,12 +1843,25 @@
                             scoreDisplay = `<br><span style="color:#666;">Score: ${score.toFixed(2)}</span>`;
                         }
 
+                        // Parse details JSON
+                        let detailsHtml = '';
+                        if (detailsJson) {
+                            const detailId = `agent-eval-detail-${execId}-${idx}`;
+                            detailsHtml = `
+                                <br><a href="#" onclick="event.preventDefault(); var el=document.getElementById('${detailId}'); el.style.display=el.style.display==='none'?'block':'none';" style="color:#0d7ff2;font-size:11px;text-decoration:none;">View Details ▾</a>
+                                <div id="${detailId}" style="display:none;margin-top:8px;">
+                                    <pre style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:8px;overflow:auto;max-height:400px;font-size:11px;white-space:pre-wrap;word-break:break-word;">${(() => { try { return JSON.stringify(JSON.parse(detailsJson), null, 2); } catch(e) { return detailsJson; } })()}</pre>
+                                </div>
+                            `;
+                        }
+
                         evalHtml += `
                             <div style="padding:8px; background:#f9f9f9; border:1px solid #e0e0e0; border-radius:4px; margin-bottom:8px;">
                                 <strong>${name || 'Unknown'}</strong> (${type || 'Unknown'})
                                 <span class="status-badge ${passed ? 'status-success' : 'status-error'}">${passed ? '✓ Pass' : '✗ Fail'}</span>
                                 ${scoreDisplay}
                                 ${error ? `<br><span style="color:#c41e3a;">${error}</span>` : ''}
+                                ${detailsHtml}
                             </div>
                         `;
                     });
@@ -2092,16 +2147,22 @@
             `;
 
             if (evaluators && evaluators.values.length > 0) {
-                evaluators.values.forEach(row => {
+                evaluators.values.forEach((row, idx) => {
                     const [name, type, total, passRate, avgScore, avgThreshold] = row;
+                    const detailRowId = `evaluator-drill-${idx}`;
                     html += `
-                        <tr>
-                            <td><strong>${name}</strong></td>
+                        <tr style="cursor:pointer;" onclick="var el=document.getElementById('${detailRowId}'); if(el.style.display==='none'){el.style.display='table-row'; loadEvaluatorDrilldown('${name}','${detailRowId}');}else{el.style.display='none';}">
+                            <td><strong>${name}</strong> <span style="color:#0d7ff2;font-size:10px;">▾</span></td>
                             <td>${type}</td>
                             <td>${total}</td>
                             <td>${passRate.toFixed(1)}%</td>
                             <td>${avgScore ? avgScore.toFixed(2) : 'N/A'}</td>
                             <td>${avgThreshold ? avgThreshold.toFixed(2) : 'N/A'}</td>
+                        </tr>
+                        <tr id="${detailRowId}" style="display:none;">
+                            <td colspan="6" style="padding:12px;background:#f5f5f5;">
+                                <div style="color:#999;font-size:12px;">Loading details...</div>
+                            </td>
                         </tr>
                     `;
                 });
@@ -2111,6 +2172,63 @@
 
             html += '</tbody></table></div>';
             document.getElementById('content').innerHTML = html;
+        }
+
+        function loadEvaluatorDrilldown(evaluatorName, rowId) {
+            const row = document.getElementById(rowId);
+            if (!row || !db) return;
+            const cell = row.querySelector('td');
+
+            try {
+                const results = db.exec(`
+                    SELECT ev.passed, ev.score, ev.threshold, ev.error, ev.details_json, ev.evaluated_at, er.eval_case_id, er.execution_id
+                    FROM evaluator_results ev
+                    JOIN execution_runs er ON ev.execution_id = er.execution_id
+                    WHERE ev.evaluator_name = ?
+                    ORDER BY ev.evaluated_at DESC
+                    LIMIT 20
+                `, [evaluatorName]);
+
+                if (!results || results.length === 0 || results[0].values.length === 0) {
+                    cell.innerHTML = '<div style="color:#999;font-size:12px;">No detailed results found</div>';
+                    return;
+                }
+
+                let drillHtml = '<div style="font-size:12px;"><strong>Recent Results (last 20):</strong><div style="margin-top:8px;">';
+                results[0].values.forEach((r, i) => {
+                    const [passed, score, threshold, error, detailsJson, evaluatedAt, caseId, execId] = r;
+                    const statusBadge = passed ? '<span style="color:#2e7d32;font-weight:600;">✓ Pass</span>' : '<span style="color:#c41e3a;font-weight:600;">✗ Fail</span>';
+                    const scoreText = score !== null && score !== undefined ? `Score: ${score.toFixed(2)}` : '';
+                    const threshText = threshold !== null && threshold !== undefined ? ` / Threshold: ${threshold.toFixed(2)}` : '';
+                    const detailToggleId = `drill-detail-${rowId}-${i}`;
+
+                    let detailsButton = '';
+                    if (detailsJson) {
+                        detailsButton = `<a href="#" onclick="event.preventDefault();event.stopPropagation();var el=document.getElementById('${detailToggleId}');el.style.display=el.style.display==='none'?'block':'none';" style="color:#0d7ff2;font-size:11px;text-decoration:none;margin-left:8px;">View Details ▾</a>`;
+                    }
+
+                    let detailsBlock = '';
+                    if (detailsJson) {
+                        detailsBlock = `<div id="${detailToggleId}" style="display:none;margin-top:6px;"><pre style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:8px;overflow:auto;max-height:400px;font-size:11px;white-space:pre-wrap;word-break:break-word;">${(() => { try { return JSON.stringify(JSON.parse(detailsJson), null, 2); } catch(e) { return detailsJson; } })()}</pre></div>`;
+                    }
+
+                    drillHtml += `
+                        <div style="padding:8px;background:#fff;border:1px solid #e0e0e0;border-radius:4px;margin-bottom:6px;" onclick="event.stopPropagation();">
+                            ${statusBadge}
+                            <code style="font-size:11px;margin-left:6px;">${caseId || ''}</code>
+                            <span style="color:#666;font-size:11px;margin-left:6px;">${scoreText}${threshText}</span>
+                            ${error ? `<span style="color:#c41e3a;font-size:11px;margin-left:6px;">${error}</span>` : ''}
+                            ${detailsButton}
+                            ${detailsBlock}
+                        </div>
+                    `;
+                });
+                drillHtml += '</div></div>';
+                cell.innerHTML = drillHtml;
+            } catch (err) {
+                console.error('Error loading evaluator drilldown:', err);
+                cell.innerHTML = `<div style="color:#c41e3a;font-size:12px;">Error: ${err.message}</div>`;
+            }
         }
 
         function loadDatasetsView() {

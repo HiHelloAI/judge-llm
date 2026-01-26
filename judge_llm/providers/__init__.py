@@ -20,7 +20,14 @@ try:
 except ImportError:
     pass  # google-adk not installed
 
+try:
+    from judge_llm.providers.adk_http_provider import ADKHTTPProvider
+    register_provider("adk_http", ADKHTTPProvider)
+except ImportError:
+    pass  # httpx not installed (optional dependency)
+
 __all__ = [
     "BaseProvider",
     "MockProvider",
+    "ADKHTTPProvider",
 ]
