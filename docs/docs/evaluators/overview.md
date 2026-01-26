@@ -22,9 +22,12 @@ An **Evaluator** is a component that:
 | Evaluator | Purpose | Key Metrics | Best For |
 |-----------|---------|-------------|----------|
 | **[Response](./response-evaluator)** | Response quality | Similarity, exact match | Answer correctness |
-| **[Trajectory](./trajectory-evaluator)** | Conversation flow | Turn count, structure | Multi-turn dialogues |
+| **[Trajectory](./trajectory-evaluator)** | Conversation flow | Turn count, tool usage | Multi-turn dialogues |
 | **[Cost](./cost-evaluator)** | Budget control | Total cost, per-case cost | Cost optimization |
 | **[Latency](./latency-evaluator)** | Performance | Response time, timeouts | Speed requirements |
+| **[Embedding Similarity](./embedding-similarity-evaluator)** | Semantic similarity | Cosine similarity | Paraphrase detection |
+| **[LLM Judge](./llm-judge-evaluator)** | LLM-based evaluation | Relevance, hallucination | Quality assessment |
+| **[Sub-Agent](./subagent-evaluator)** | Agent chain validation | Agent transfers | Multi-agent systems |
 
 ### Custom Evaluators
 
@@ -177,6 +180,36 @@ Override evaluator settings for specific test cases:
 - Detecting timeouts
 
 **Example:** Real-time applications, performance testing
+
+### Embedding Similarity Evaluator
+
+**Use when:**
+- Responses can vary in wording but should have same meaning
+- Testing paraphrasing or summarization
+- Validating semantic understanding
+- Comparing responses across different models
+
+**Example:** Semantic search, paraphrase detection, multilingual evaluation
+
+### LLM Judge Evaluator
+
+**Use when:**
+- Evaluating subjective quality (tone, helpfulness)
+- Detecting hallucinations and false claims
+- Assessing relevance to user intent
+- Testing open-ended or creative responses
+
+**Example:** Chatbot quality, content moderation, fact-checking
+
+### Sub-Agent Evaluator
+
+**Use when:**
+- Testing multi-agent orchestration systems
+- Validating agent routing logic
+- Ensuring correct agent specialization
+- Testing agent handoff workflows
+
+**Example:** Multi-agent workflows, agent routing validation
 
 ## Evaluation Strategies
 
@@ -358,6 +391,9 @@ evaluators:
 - [Trajectory Evaluator](./trajectory-evaluator) - Check conversation structure
 - [Cost Evaluator](./cost-evaluator) - Control spending
 - [Latency Evaluator](./latency-evaluator) - Measure performance
+- [Embedding Similarity Evaluator](./embedding-similarity-evaluator) - Semantic similarity
+- [LLM Judge Evaluator](./llm-judge-evaluator) - LLM-based evaluation
+- [Sub-Agent Evaluator](./subagent-evaluator) - Multi-agent validation
 - [Custom Evaluators](./custom-evaluators) - Build your own
 
 ## API Reference

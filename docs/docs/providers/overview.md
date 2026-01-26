@@ -24,18 +24,21 @@ Judge LLM includes several built-in providers and supports custom implementation
 |----------|-------------|----------|
 | **[Gemini](./gemini-provider)** | Google's Gemini models | Production LLM evaluation |
 | **[Mock](./mock-provider)** | Test provider (no API calls) | Testing & development |
-| **[Google ADK](./google-adk-provider)** | Google Agent Development Kit | AI agents with tool use |
+| **[Google ADK](./google-adk-provider)** | Google Agent Development Kit | Local AI agents with tool use |
+| **[ADK HTTP](./adk-http-provider)** | Remote ADK HTTP endpoints | Deployed agents via HTTP/SSE |
 | **[Custom](./custom-providers)** | Your own implementation | Any LLM service |
 
 ### Provider Comparison
 
-| Feature | Gemini | Mock | Google ADK | Custom |
-|---------|--------|------|------------|--------|
-| API Calls | ✅ Yes | ❌ No | ✅ Yes | Depends |
-| Cost Tracking | ✅ Yes | ✅ Simulated | ✅ Yes | Optional |
-| Tool Calling | ✅ Yes | ❌ No | ✅ Yes | Optional |
-| Authentication | ✅ API Key | ❌ None | ✅ API Key | Depends |
-| Multi-turn | ✅ Yes | ✅ Yes | ✅ Yes | Optional |
+| Feature | Gemini | Mock | Google ADK | ADK HTTP | Custom |
+|---------|--------|------|------------|----------|--------|
+| API Calls | ✅ Yes | ❌ No | ✅ Yes | ✅ Yes | Depends |
+| Cost Tracking | ✅ Yes | ✅ Simulated | ✅ Yes | ✅ Yes | Optional |
+| Tool Calling | ✅ Yes | ❌ No | ✅ Yes | ✅ Yes | Optional |
+| Authentication | ✅ API Key | ❌ None | ✅ API Key | ✅ Multiple | Depends |
+| Multi-turn | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes | Optional |
+| Multi-agent | ❌ No | ❌ No | ✅ Yes | ✅ Yes | Optional |
+| SSE Streaming | ❌ No | ❌ No | ❌ No | ✅ Yes | Optional |
 
 ## Quick Start
 
@@ -144,8 +147,11 @@ register_provider("my_provider", MyProvider)
 ### For Production LLM Testing
 - Use **[Gemini Provider](./gemini-provider)** - Google's production models
 
-### For AI Agents with Tools
-- Use **[Google ADK Provider](./google-adk-provider)** - Full agent capabilities
+### For Local AI Agents with Tools
+- Use **[Google ADK Provider](./google-adk-provider)** - Full agent capabilities with local code
+
+### For Remote/Deployed Agents
+- Use **[ADK HTTP Provider](./adk-http-provider)** - Connect to agents via HTTP/SSE
 
 ### For Other LLM Services
 - Implement **[Custom Provider](./custom-providers)** - OpenAI, Anthropic, etc.
@@ -256,7 +262,8 @@ providers:
 
 - **[Gemini Provider](./gemini-provider)** - Configure Google's Gemini models
 - **[Mock Provider](./mock-provider)** - Set up test provider
-- **[Google ADK Provider](./google-adk-provider)** - Build AI agents
+- **[Google ADK Provider](./google-adk-provider)** - Build local AI agents
+- **[ADK HTTP Provider](./adk-http-provider)** - Connect to remote agents
 - **[Custom Providers](./custom-providers)** - Implement your own
 
 ## Related Documentation

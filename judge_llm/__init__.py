@@ -14,6 +14,11 @@ from judge_llm.evaluators.base import BaseEvaluator
 from judge_llm.reporters.base import BaseReporter
 from judge_llm.cli import main
 
+# Import providers, evaluators, reporters to trigger auto-registration
+import judge_llm.providers
+import judge_llm.evaluators
+import judge_llm.reporters
+
 __version__ = "1.0.3"
 __all__ = [
     "evaluate",

@@ -24,8 +24,8 @@ Perfect for regression testing, A/B testing providers, and ensuring production-g
 
 ## Features
 
-- **Multiple Providers**: Gemini, Google ADK, Mock, and custom providers with registry-based extensibility
-- **Built-in Evaluators**: Response similarity, trajectory validation, cost/latency checks
+- **Multiple Providers**: Gemini, Google ADK, ADK HTTP, Mock, and custom providers with registry-based extensibility
+- **Built-in Evaluators**: Response similarity, trajectory validation, cost/latency checks, embedding similarity, LLM-as-judge, sub-agent chain validation
 - **Custom Components**: Create and register custom providers, evaluators, and reporters
 - **Registry System**: Register once in defaults, use everywhere by name
 - **Rich Reports**: Console tables, interactive HTML dashboard, JSON exports, SQLite database, plus custom reporters
@@ -240,6 +240,31 @@ The ADK provider automatically:
 
 See [examples/09-google-adk-agent/](examples/09-google-adk-agent/) for a complete working example.
 
+**ADK HTTP Provider Configuration:**
+
+For evaluating agents deployed as remote HTTP services:
+
+```yaml
+providers:
+  - type: adk_http
+    agent_id: my_remote_agent
+    endpoint_url: "http://localhost:8000/run_sse"
+    auth_type: bearer          # bearer, api_key, basic, none
+    timeout: 60
+    app_name: "my_app"
+    model: gemini-2.0-flash
+
+evaluators:
+  - type: response_evaluator
+  - type: trajectory_evaluator
+  - type: subagent_evaluator   # Validate agent transfer chains
+  - type: llm_judge_evaluator  # LLM-as-judge quality assessment
+    config:
+      evaluation_type: comprehensive
+```
+
+See [examples/10-adk-http-agent/](examples/10-adk-http-agent/) for a complete working example.
+
 See the [examples/](examples/) directory for complete configuration examples including default configs, custom evaluators, and advanced features.
 
 ## Custom Component Registration
@@ -317,7 +342,7 @@ See [examples/default_config_reporters/](examples/default_config_reporters/) for
 
 ## Testing Examples
 
-Explore **9 complete examples** in the `examples/` directory, from basic setup to advanced features:
+Explore **10 complete examples** in the `examples/` directory, from basic setup to advanced features:
 
 | Example | Description | Key Features |
 |---------|-------------|--------------|
@@ -330,6 +355,7 @@ Explore **9 complete examples** in the `examples/` directory, from basic setup t
 | **[07-custom-reporter](examples/07-custom-reporter/)** | Creating custom reporters | CSV reporter example, config-based & programmatic registration |
 | **[08-default-config-reporters](examples/08-default-config-reporters/)** | Registering custom components | Register providers, evaluators, and reporters in defaults |
 | **[09-google-adk-agent](examples/09-google-adk-agent/)** | Google ADK agent evaluation | ADK integration, tool usage validation, agent module loading |
+| **[10-adk-http-agent](examples/10-adk-http-agent/)** | Remote ADK HTTP agent evaluation | HTTP/SSE streaming, multi-agent chains, sub-agent evaluation |
 
 ### Running Examples
 
@@ -365,20 +391,25 @@ python run_evaluation.py
 - **05-evaluator-config-override** - Fine-tune evaluations per test case
 - **06-database-reporter** - Track metrics over time with SQL queries
 - **09-google-adk-agent** - Evaluate Google ADK agents seamlessly
+- **10-adk-http-agent** - Evaluate remote agents via HTTP with multi-agent chain validation
 
 ## Built-in Components
 
 ### Providers
 - **Gemini** - Google's Gemini models (requires `GOOGLE_API_KEY` in `.env`)
-- **Google ADK** - Google's Agent Development Kit for agentic workflows (requires `google-adk` package)
+- **Google ADK** - Google's Agent Development Kit for local agentic workflows (requires `google-adk` package)
+- **ADK HTTP** - Remote ADK HTTP endpoints with SSE streaming, multi-auth, and agent chain tracking (requires `httpx`)
 - **Mock** - Built-in test provider, no setup required
 - **Custom** - Extend `BaseProvider` for your own LLM providers (OpenAI, Anthropic, etc.)
 
 ### Evaluators
 - **ResponseEvaluator** - Compare responses (exact, semantic similarity, ROUGE)
-- **TrajectoryEvaluator** - Validate tool uses and conversation flow
+- **TrajectoryEvaluator** - Validate tool uses, conversation flow, and argument matching
 - **CostEvaluator** - Enforce cost thresholds
 - **LatencyEvaluator** - Enforce latency thresholds
+- **EmbeddingSimilarityEvaluator** - Semantic similarity using embeddings (Gemini, OpenAI, sentence-transformers)
+- **LLMJudgeEvaluator** - LLM-as-judge for relevance, hallucination, quality, and factuality assessment
+- **SubAgentEvaluator** - Validate agent transfer chains in multi-agent orchestration systems
 - **Custom** - Extend `BaseEvaluator` for custom logic (safety, compliance, etc.)
 
 ### Reporters
