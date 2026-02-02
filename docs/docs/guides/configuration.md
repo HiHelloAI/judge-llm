@@ -450,6 +450,32 @@ Failed evaluation cases:
 
 Exit code: `1` (failure)
 
+### Telemetry Configuration
+
+Enable OpenTelemetry tracing for deep observability into evaluation runs.
+
+```yaml
+agent:
+  telemetry:
+    enabled: true           # Enable tracing (default: false)
+    exporter: phoenix       # "console", "otlp", or "phoenix"
+    service_name: judge-llm # Service/project name for traces
+    endpoint: http://localhost:6006  # Exporter endpoint (optional)
+```
+
+| Option | Description | Default | Type |
+|--------|-------------|---------|------|
+| `telemetry.enabled` | Enable OpenTelemetry tracing | `false` | boolean |
+| `telemetry.exporter` | Exporter type (`console`, `otlp`, `phoenix`) | `console` | string |
+| `telemetry.service_name` | Service name for traces | `judge-llm` | string |
+| `telemetry.endpoint` | Exporter endpoint URL | varies by exporter | string |
+
+Can also be enabled via environment variable `JUDGE_LLM_TELEMETRY=true` or CLI flag `--telemetry`.
+
+Requires optional dependencies: `pip install judge-llm[telemetry]` or `pip install judge-llm[phoenix]`.
+
+See the [Telemetry Guide](./telemetry) for full documentation including span attributes and backend setup.
+
 ### Parallel Execution
 
 Enable parallel execution to speed up large test suites:

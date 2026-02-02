@@ -528,6 +528,17 @@ OUTPUT_PATH=./results.json
 DB_PATH=./results.db
 ```
 
+### Telemetry
+
+```bash
+JUDGE_LLM_TELEMETRY=true           # Enable OpenTelemetry tracing
+OTEL_EXPORTER_TYPE=phoenix          # Exporter: "console", "otlp", or "phoenix"
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317  # OTLP collector endpoint
+PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006     # Arize Phoenix endpoint
+```
+
+See the [Telemetry Guide](./telemetry) for full documentation.
+
 ### Environment Identification
 
 ```bash
