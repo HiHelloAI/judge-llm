@@ -10,7 +10,7 @@ from judge_llm.utils.logger import get_logger
 
 
 class DirectoryLoader(BaseLoader):
-    """Load eval sets from all JSON or YAML files in a directory"""
+    """Load eval sets from all JSON or YAML files in a directory and its subdirectories"""
 
     def __init__(self, directory_path: str, pattern: str = "*.json"):
         """Initialize directory loader
@@ -18,6 +18,7 @@ class DirectoryLoader(BaseLoader):
         Args:
             directory_path: Path to the directory containing eval set files
             pattern: File pattern to match (default: *.json). Use *.yaml or *.yml for YAML files.
+                     Files are searched recursively in all subdirectories.
         """
         self.directory_path = Path(directory_path).expanduser().resolve()
         self.pattern = pattern
@@ -25,7 +26,7 @@ class DirectoryLoader(BaseLoader):
         self._cache = None
 
     def load(self) -> List[EvalSet]:
-        """Load evaluation sets from all matching files in directory
+        """Load evaluation sets from all matching files in directory and subdirectories
 
         Returns:
             List of EvalSet objects
@@ -34,7 +35,7 @@ class DirectoryLoader(BaseLoader):
             self.logger.debug(f"Returning cached eval sets from {self.directory_path}")
             return self._cache
 
-        self.logger.info(f"Loading eval sets from directory {self.directory_path}")
+        self.logger.info(f"Loading eval sets from directory {self.directory_path} (recursive)")
 
         if not self.directory_path.exists():
             raise FileNotFoundError(f"Directory not found: {self.directory_path}")
@@ -43,7 +44,7 @@ class DirectoryLoader(BaseLoader):
             raise ValueError(f"Path is not a directory: {self.directory_path}")
 
         eval_sets = []
-        files = list(self.directory_path.glob(self.pattern))
+        files = sorted(self.directory_path.rglob(self.pattern))
 
         if not files:
             self.logger.warning(
@@ -51,7 +52,15 @@ class DirectoryLoader(BaseLoader):
             )
             return eval_sets
 
-        self.logger.info(f"Found {len(files)} files matching pattern '{self.pattern}'")
+        # Log files organized by directory structure
+        dirs_found = {}
+        for f in files:
+            rel_dir = str(f.parent.relative_to(self.directory_path))
+            dirs_found.setdefault(rel_dir, []).append(f.name)
+
+        self.logger.info(f"Found {len(files)} files matching pattern '{self.pattern}' across {len(dirs_found)} directories")
+        for dir_path, filenames in sorted(dirs_found.items()):
+            self.logger.debug(f"  {dir_path}/: {', '.join(filenames)}")
 
         for file_path in files:
             try:
@@ -72,6 +81,8 @@ class DirectoryLoader(BaseLoader):
 
                 # Parse data into EvalSet model
                 eval_set = EvalSet(**data)
+                # Set source_path as relative path from the base directory
+                eval_set.source_path = str(file_path.relative_to(self.directory_path))
                 eval_sets.append(eval_set)
 
                 self.logger.info(

@@ -43,52 +43,93 @@ def _print_configuration_summary(
     evaluators_config: List[Dict[str, Any]],
     reporters_config: List[Dict[str, Any]],
 ):
-    """Print a nice summary of the configuration in grid format - one row per agent"""
-    logger = get_logger()
+    """Print a detailed summary of the evaluation configuration using Rich"""
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.columns import Columns
+    from rich.text import Text
 
-    # Prepare summary data
+    console = Console()
+
+    # --- Agent / Execution Settings ---
     num_runs = agent_config.get('num_runs', 1)
-    parallel = "Yes" if agent_config.get('parallel_execution', False) else "No"
-    if agent_config.get('parallel_execution', False):
-        parallel += f" ({agent_config.get('max_workers', 4)})"
+    parallel = agent_config.get('parallel_execution', False)
+    max_workers = agent_config.get('max_workers', 4)
+    log_level = agent_config.get('log_level', 'INFO')
+    fail_on_threshold = agent_config.get('fail_on_threshold_violation', True)
 
-    # Get dataset info
+    exec_table = Table(show_header=False, box=None, padding=(0, 2))
+    exec_table.add_column(style="cyan bold")
+    exec_table.add_column()
+    exec_table.add_row("Runs", str(num_runs))
+    exec_table.add_row("Parallel", f"Yes ({max_workers} workers)" if parallel else "No")
+    exec_table.add_row("Log Level", log_level)
+    exec_table.add_row("Fail on Threshold", "Yes" if fail_on_threshold else "No")
+
+    console.print(Panel(exec_table, title="[bold]Evaluation Configuration[/bold]", border_style="cyan"))
+
+    # --- Providers ---
+    prov_table = Table(box=None, padding=(0, 2))
+    prov_table.add_column("Agent ID", style="green bold")
+    prov_table.add_column("Type")
+    prov_table.add_column("Model")
+    prov_table.add_column("Extra")
+    for p in providers_config:
+        agent_id = p.get('agent_id', 'N/A')
+        ptype = p.get('type', 'unknown')
+        model = p.get('model', '-')
+        # Show other notable keys
+        skip_keys = {'type', 'agent_id', 'model', 'agent_config_path', 'agent_metadata',
+                     'register_as', 'module_path', 'class_name'}
+        extras = {k: v for k, v in p.items() if k not in skip_keys}
+        extras_str = ", ".join(f"{k}={v}" for k, v in extras.items()) if extras else "-"
+        prov_table.add_row(agent_id, ptype, str(model), extras_str)
+
+    console.print(Panel(prov_table, title="[bold]Providers[/bold]", border_style="green"))
+
+    # --- Datasets ---
     paths = dataset_config.get('paths', [])
-    datasets_str = ', '.join([p.split('/')[-1] for p in paths]) if paths else 'N/A'
-    if len(datasets_str) > 25:
-        datasets_str = datasets_str[:22] + "..."
+    loader_type = dataset_config.get('loader', 'local_file')
+    ds_table = Table(box=None, padding=(0, 2))
+    ds_table.add_column("Loader", style="yellow bold")
+    ds_table.add_column("Path")
+    for path in paths:
+        ds_table.add_row(loader_type, path)
+    if not paths:
+        ds_table.add_row(loader_type, "(none)")
 
-    # Get evaluators summary
-    evaluators_str = ', '.join([e.get('name', e.get('type', 'unknown'))[:15] for e in evaluators_config])
-    if len(evaluators_str) > 30:
-        evaluators_str = evaluators_str[:27] + "..."
+    console.print(Panel(ds_table, title="[bold]Datasets[/bold]", border_style="yellow"))
 
-    # Get reporters summary
-    reporters_str = ', '.join([r.get('type', 'unknown') for r in reporters_config])
-    if len(reporters_str) > 20:
-        reporters_str = reporters_str[:17] + "..."
+    # --- Evaluators ---
+    eval_table = Table(box=None, padding=(0, 2))
+    eval_table.add_column("Name", style="magenta bold")
+    eval_table.add_column("Type")
+    eval_table.add_column("Enabled")
+    eval_table.add_column("Config")
+    for e in evaluators_config:
+        name = e.get('name', e.get('type', 'unknown'))
+        etype = e.get('type', 'unknown')
+        enabled = "Yes" if e.get('enabled', True) else "No"
+        cfg = e.get('config', {})
+        cfg_str = ", ".join(f"{k}={v}" for k, v in cfg.items()) if cfg else "-"
+        eval_table.add_row(name, etype, enabled, cfg_str)
 
-    # Build grid
-    summary = "\n" + "="*140 + "\n"
-    summary += "  EVALUATION CONFIGURATION\n"
-    summary += "="*140 + "\n"
+    console.print(Panel(eval_table, title="[bold]Evaluators[/bold]", border_style="magenta"))
 
-    # Table header
-    summary += "┌" + "─"*138 + "┐\n"
-    summary += "│ Agent ID / Provider    │ Type    │ Runs │ Parallel │ Datasets             │ Evaluators                   │ Reporters           │\n"
-    summary += "├" + "─"*138 + "┤\n"
+    # --- Reporters ---
+    rep_table = Table(box=None, padding=(0, 2))
+    rep_table.add_column("Type", style="blue bold")
+    rep_table.add_column("Config")
+    for r in reporters_config:
+        rtype = r.get('type', 'unknown')
+        skip = {'type'}
+        cfg = {k: v for k, v in r.items() if k not in skip}
+        cfg_str = ", ".join(f"{k}={v}" for k, v in cfg.items()) if cfg else "-"
+        rep_table.add_row(rtype, cfg_str)
 
-    # One row per provider (agent)
-    for provider in providers_config:
-        agent_id = provider.get('agent_id', 'N/A')[:22]
-        provider_type = provider.get('type', 'unknown')[:7]
-
-        summary += f"│ {agent_id:<22} │ {provider_type:<7} │ {num_runs:^4} │ {parallel:<8} │ {datasets_str:<20} │ {evaluators_str:<28} │ {reporters_str:<19} │\n"
-
-    summary += "└" + "─"*138 + "┘\n"
-    summary += "="*140 + "\n\n"
-
-    logger.info(summary)
+    console.print(Panel(rep_table, title="[bold]Reporters[/bold]", border_style="blue"))
+    console.print()
 
 
 def evaluate(
@@ -189,8 +230,6 @@ def evaluate(
     # Initialize telemetry from config if enabled
     maybe_init_from_config(config_dict.get("agent", {}))
 
-    logger.info("Starting Judge LLM evaluation")
-
     try:
         return _evaluate_from_config(config_dict)
     finally:
@@ -284,7 +323,6 @@ def _evaluate_from_config(config: Dict[str, Any]) -> EvaluationReport:
     logger.debug(f"Initialized {len(evaluators)} evaluator(s)")
 
     # Execute evaluations
-    logger.info("▶ Starting evaluation...")
     with trace_span("judge_llm.evaluate", attributes={
         "judge_llm.num_providers": len(providers),
         "judge_llm.num_evaluators": len(evaluators),
@@ -565,7 +603,12 @@ def _execute_evaluations(
     Returns:
         Tuple of (execution_runs, wall_clock_time_seconds)
     """
+    from rich.console import Console
+    from rich.live import Live
+    from rich.text import Text
+
     logger = get_logger()
+    console = Console()
     execution_runs = []
 
     # Create tasks
@@ -576,35 +619,75 @@ def _execute_evaluations(
                 for run_num in range(num_runs):
                     tasks.append((eval_set, eval_case, provider, evaluators, run_num + 1))
 
-    logger.debug(f"Total tasks to execute: {len(tasks)}")
+    total = len(tasks)
+    logger.debug(f"Total tasks to execute: {total}")
 
     # Track wall-clock time for the entire execution
     import time
     start_time = time.time()
+    completed = 0
 
-    if parallel_execution and len(tasks) > 1:
-        logger.debug(f"Executing in parallel with {max_workers} workers")
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {
-                executor.submit(_execute_single_task, *task): task for task in tasks
-            }
+    def _make_status(phase: str, detail: str = "") -> Text:
+        elapsed = time.time() - start_time
+        parts = Text()
+        parts.append(f"  [{completed}/{total}] ", style="bold cyan")
+        parts.append(f"{phase}", style="bold")
+        if detail:
+            parts.append(f" {detail}", style="dim")
+        parts.append(f"  ({elapsed:.1f}s)", style="dim")
+        return parts
 
-            for future in as_completed(futures):
+    with Live(_make_status("Starting evaluation..."), console=console, refresh_per_second=4, transient=True) as live:
+        if parallel_execution and len(tasks) > 1:
+            logger.debug(f"Executing in parallel with {max_workers} workers")
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {}
+                for task in tasks:
+                    _, eval_case, provider, _, run_num = task
+                    futures[executor.submit(_execute_single_task, *task)] = (
+                        eval_case.eval_id, provider.get_provider_type(), run_num
+                    )
+                live.update(_make_status("Running evaluations in parallel...", f"({max_workers} workers)"))
+
+                for future in as_completed(futures):
+                    eval_id, prov_type, run_num = futures[future]
+                    success = False
+                    try:
+                        exec_run = future.result()
+                        execution_runs.append(exec_run)
+                        success = exec_run.overall_success
+                    except Exception as e:
+                        logger.error(f"Task failed with error: {e}")
+                    completed += 1
+                    status = "✓" if success else "✗"
+                    live.update(_make_status(
+                        f"{status} {eval_id}",
+                        f"provider={prov_type} run={run_num}"
+                    ))
+        else:
+            logger.debug("Executing sequentially")
+            for task in tasks:
+                _, eval_case, provider, _, run_num = task
+                live.update(_make_status(
+                    f"▶ {eval_case.eval_id}",
+                    f"provider={provider.get_provider_type()} run={run_num}"
+                ))
+                success = False
                 try:
-                    exec_run = future.result()
+                    exec_run = _execute_single_task(*task)
                     execution_runs.append(exec_run)
+                    success = exec_run.overall_success
                 except Exception as e:
                     logger.error(f"Task failed with error: {e}")
-    else:
-        logger.debug("Executing sequentially")
-        for task in tasks:
-            try:
-                exec_run = _execute_single_task(*task)
-                execution_runs.append(exec_run)
-            except Exception as e:
-                logger.error(f"Task failed with error: {e}")
+                completed += 1
+                status = "✓" if success else "✗"
+                live.update(_make_status(
+                    f"{status} {eval_case.eval_id}",
+                    f"provider={provider.get_provider_type()} run={run_num}"
+                ))
 
     wall_clock_time = time.time() - start_time
+    console.print(f"  [bold green]✓[/bold green] Completed {total} evaluation(s) in {wall_clock_time:.1f}s")
 
     return execution_runs, wall_clock_time
 
@@ -780,6 +863,7 @@ def _execute_single_task(
             evaluator_results=evaluator_results,
             overall_success=overall_success,
             eval_case=eval_case,
+            source_path=eval_set.source_path,
         )
 
         logger.debug(f"Execution {execution_id} completed with status: {overall_success}")

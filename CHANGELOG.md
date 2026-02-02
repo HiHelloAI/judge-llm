@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.19] - 2026-02-02
+
+### Added
+- Recursive directory loading: `DirectoryLoader` now traverses all subdirectories using `rglob()` instead of `glob()`, discovering eval set files in nested folder structures
+- `source_path` field on `EvalSet` and `ExecutionRun` models to track the relative file path from the dataset root directory
+- Directory-based grouping in all reporters:
+  - **HTML report**: sidebar groups executions by directory with folder icons and per-directory pass/fail counts; detail view shows source path
+  - **Console reporter**: execution table grouped by source directory with per-group titles and pass/fail summaries; added "Source" column
+  - **Database reporter**: `source_path` column in `execution_runs` table with index; auto-migration for existing databases via `ALTER TABLE`
+  - **Dashboard (monitor.html)**: executions view groups by directory with folder headers, added "Source" column, source path in detail panel
+- Search filter includes `source_path` in HTML report and dashboard
+
+### Changed
+- `DirectoryLoader` results are now `sorted()` for deterministic ordering
+- Directory loader logs discovered files organized by directory structure
+
+## [1.0.17] - 2026-02-02
+
+### Changed
+- HTML report: evaluator "View Details" now includes per-invocation conversation comparison — response text, tools, and sub-agents shown side-by-side with match/missing/unexpected indicators inline with each evaluator
+- HTML report: detailed side-by-side comparison per invocation turn — response text, tools, and sub-agents shown with match/missing/unexpected indicators
+- HTML report: evaluator "View Details" expansion now renders structured expected vs actual pairs and metrics cards instead of raw JSON
+- HTML report: fixed overflow clipping on expanded evaluator detail rows
+- HTML report: expandable tool args and sub-agent responses with toggle buttons
+- HTML report: turn-level header with turn number badge and evaluator summary on first turn
+
 ## [1.0.14] - 2026-02-02
 
 ### Fixed
@@ -162,7 +188,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Release Links
 
-- [1.0.14] - Latest release with telemetry attribute fix
+- [1.0.19] - Recursive directory loading, source path tracking, directory-based report grouping
+- [1.0.17] - Per-invocation comparison in evaluator View Details
+- [1.0.16] - Enhanced HTML report comparison views
+- [1.0.14] - Telemetry attribute fix
 - [1.0.11] - Custom provider registration fix
 - [1.0.9] - ADK HTTP lifecycle callbacks for extensibility
 - [1.0.7] - Phoenix sessions, I/O visibility, and OpenInference support

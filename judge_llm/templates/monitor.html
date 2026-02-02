@@ -1428,11 +1428,12 @@
                     er.time_taken,
                     er.input_tokens,
                     er.output_tokens,
-                    ec.user_prompt
+                    ec.user_prompt,
+                    er.source_path
                 FROM execution_runs er
                 LEFT JOIN eval_cases ec ON er.eval_case_id = ec.eval_case_id
                 ${filter}
-                ORDER BY er.timestamp DESC
+                ORDER BY er.source_path ASC, er.timestamp DESC
                 LIMIT 100
             `)[0];
 
@@ -1447,6 +1448,7 @@
                             <tr>
                                 <th>Execution ID</th>
                                 <th>Agent</th>
+                                <th>Source</th>
                                 <th>Dataset</th>
                                 <th>Test Case</th>
                                 <th>Provider</th>
@@ -1460,28 +1462,61 @@
             `;
 
             if (executions && executions.values.length > 0) {
-                // Group executions by date
-                const groupedByDate = {};
+                // Check if any executions have source_path
+                const hasSourcePaths = executions.values.some(row => row[13]);
+
+                // Group executions by source directory, then by date
+                const groupedByDir = {};
                 executions.values.forEach(row => {
-                    const timestamp = row[7]; // timestamp is at index 7
-                    const date = new Date(timestamp).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                    });
-                    if (!groupedByDate[date]) {
-                        groupedByDate[date] = [];
-                    }
-                    groupedByDate[date].push(row);
+                    const sourcePath = row[13] || '';
+                    const lastSlash = sourcePath.lastIndexOf('/');
+                    const dirKey = lastSlash > 0 ? sourcePath.substring(0, lastSlash) : (sourcePath ? '.' : '');
+                    if (!groupedByDir[dirKey]) groupedByDir[dirKey] = [];
+                    groupedByDir[dirKey].push(row);
                 });
 
-                // Get dates in reverse chronological order
-                const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
-                    const dateA = new Date(groupedByDate[a][0][7]);
-                    const dateB = new Date(groupedByDate[b][0][7]);
-                    return dateB - dateA; // Latest first
-                });
+                const sortedDirKeys = Object.keys(groupedByDir).sort();
+                const hasMultipleDirs = hasSourcePaths && (sortedDirKeys.length > 1 || (sortedDirKeys.length === 1 && sortedDirKeys[0] !== ''));
+
+                sortedDirKeys.forEach(dirKey => {
+                    const dirRows = groupedByDir[dirKey];
+
+                    // Directory header row
+                    if (hasMultipleDirs) {
+                        const displayDir = dirKey === '' ? 'Ungrouped' : dirKey === '.' ? 'Root' : dirKey;
+                        const dirSuccessCount = dirRows.filter(row => row[6]).length;
+                        html += `
+                            <tr style="background: #eef2ff; border-top: 2px solid #c7d2fe;">
+                                <td colspan="10" style="padding: 10px 16px; font-weight: 600; color: #4338ca; font-size: 13px;">
+                                    📁 ${displayDir}
+                                    <span style="color: #666; font-weight: normal; font-size: 12px; margin-left: 12px;">
+                                        ${dirRows.length} execution${dirRows.length !== 1 ? 's' : ''}
+                                        (${dirSuccessCount} passed, ${dirRows.length - dirSuccessCount} failed)
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                    }
+
+                    // Group by date within each directory
+                    const groupedByDate = {};
+                    dirRows.forEach(row => {
+                        const timestamp = row[7];
+                        const date = new Date(timestamp).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        if (!groupedByDate[date]) groupedByDate[date] = [];
+                        groupedByDate[date].push(row);
+                    });
+
+                    const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
+                        const dateA = new Date(groupedByDate[a][0][7]);
+                        const dateB = new Date(groupedByDate[b][0][7]);
+                        return dateB - dateA;
+                    });
 
                 // Render grouped executions
                 sortedDates.forEach(date => {
@@ -1492,7 +1527,7 @@
                     // Date header row
                     html += `
                         <tr style="background: #f5f5f5; border-top: 2px solid #ddd;">
-                            <td colspan="9" style="padding: 12px 16px; font-weight: 600; color: #333; font-size: 14px;">
+                            <td colspan="10" style="padding: 12px 16px; font-weight: 600; color: #333; font-size: 14px;">
                                 📅 ${date}
                                 <span style="color: #666; font-weight: normal; font-size: 12px; margin-left: 12px;">
                                     ${execCount} execution${execCount !== 1 ? 's' : ''}
@@ -1504,11 +1539,13 @@
 
                     // Execution rows for this date
                     execsForDate.forEach((row, idx) => {
-                        const [execId, setId, caseId, agent, provider, model, success, timestamp, cost, time, inputTokens, outputTokens, prompt] = row;
+                        const [execId, setId, caseId, agent, provider, model, success, timestamp, cost, time, inputTokens, outputTokens, prompt, sourcePath] = row;
+                        const sourceFile = sourcePath ? sourcePath.split('/').pop() : '';
                         html += `
                             <tr class="execution-row" data-exec-id="${execId}" style="cursor: pointer;">
                                 <td><code>${execId.substring(0, 12)}...</code></td>
                                 <td>${agent || 'N/A'}</td>
+                                <td title="${sourcePath || ''}" style="color:#666;font-size:12px;">${sourceFile || '-'}</td>
                                 <td><code>${setId}</code></td>
                                 <td><code>${caseId.substring(0, 15)}...</code></td>
                                 <td>${provider}${model ? ` (${model})` : ''}</td>
@@ -1518,7 +1555,7 @@
                                 <td>${new Date(timestamp).toLocaleTimeString()}</td>
                             </tr>
                             <tr style="display: none;">
-                                <td colspan="9" class="execution-details" id="exec-details-${execId}">
+                                <td colspan="10" class="execution-details" id="exec-details-${execId}">
                                 <div class="detail-grid">
                                     <div class="detail-section">
                                         <div class="detail-label">Full Execution ID</div>
@@ -1527,6 +1564,10 @@
                                     <div class="detail-section">
                                         <div class="detail-label">Agent</div>
                                         <div class="detail-value">${agent || 'N/A'}</div>
+                                    </div>
+                                    <div class="detail-section">
+                                        <div class="detail-label">Source</div>
+                                        <div class="detail-value">${sourcePath || 'N/A'}</div>
                                     </div>
                                     <div class="detail-section">
                                         <div class="detail-label">Dataset</div>
@@ -1569,9 +1610,10 @@
                         </tr>
                         `;
                     });
-                });
+                }); // end sortedDates
+                }); // end sortedDirKeys
             } else {
-                html += '<tr><td colspan="9" class="empty-state">No executions found</td></tr>';
+                html += '<tr><td colspan="10" class="empty-state">No executions found</td></tr>';
             }
 
             html += '</tbody></table></div>';

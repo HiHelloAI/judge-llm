@@ -72,7 +72,9 @@ report = evaluate(
 ### Sidebar
 - Summary metrics
 - Test case list with status indicators
+- Directory-based grouping with folder icons and per-directory pass/fail counts (when using directory loader)
 - Click to navigate to specific test
+- Search by eval case ID, provider, source path, or evaluator name
 
 ### Main Panel
 - Detailed test case view

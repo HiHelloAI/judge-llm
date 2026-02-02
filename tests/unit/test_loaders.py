@@ -629,3 +629,82 @@ class TestDirectoryLoader:
         # Should load only valid files (invalid files are skipped with warning)
         assert len(eval_sets) == 1
         assert eval_sets[0].name == "valid_yaml"
+
+    def test_load_directory_recursive_subdirectories(self, temp_dir):
+        """Test loading files recursively from nested subdirectories."""
+        # Create files in root
+        root_data = {
+            "eval_set_id": "root_set",
+            "name": "root_test",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": []
+        }
+        with open(temp_dir / "root.json", "w") as f:
+            json.dump(root_data, f)
+
+        # Create files in a subdirectory
+        sub_dir = temp_dir / "subdir"
+        sub_dir.mkdir()
+        sub_data = {
+            "eval_set_id": "sub_set",
+            "name": "sub_test",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": []
+        }
+        with open(sub_dir / "sub.json", "w") as f:
+            json.dump(sub_data, f)
+
+        # Create files in a nested subdirectory
+        nested_dir = sub_dir / "nested"
+        nested_dir.mkdir()
+        nested_data = {
+            "eval_set_id": "nested_set",
+            "name": "nested_test",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": []
+        }
+        with open(nested_dir / "nested.json", "w") as f:
+            json.dump(nested_data, f)
+
+        loader = DirectoryLoader(str(temp_dir))
+        eval_sets = loader.load()
+
+        assert len(eval_sets) == 3
+        names = {es.name for es in eval_sets}
+        assert names == {"root_test", "sub_test", "nested_test"}
+
+        # Verify source_path is set with relative paths
+        source_paths = {es.source_path for es in eval_sets}
+        assert "root.json" in source_paths
+        assert str(Path("subdir") / "sub.json") in source_paths
+        assert str(Path("subdir") / "nested" / "nested.json") in source_paths
+
+    def test_load_directory_recursive_with_pattern(self, temp_dir):
+        """Test recursive loading respects file pattern filter."""
+        sub_dir = temp_dir / "subdir"
+        sub_dir.mkdir()
+
+        eval_data = {
+            "eval_set_id": "set1",
+            "name": "eval_test",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": []
+        }
+        with open(sub_dir / "eval1.json", "w") as f:
+            json.dump(eval_data, f)
+
+        other_data = {
+            "eval_set_id": "set2",
+            "name": "other_test",
+            "creation_timestamp": 1234567890.0,
+            "eval_cases": []
+        }
+        with open(sub_dir / "other.json", "w") as f:
+            json.dump(other_data, f)
+
+        loader = DirectoryLoader(str(temp_dir), pattern="eval*.json")
+        eval_sets = loader.load()
+
+        assert len(eval_sets) == 1
+        assert eval_sets[0].name == "eval_test"
+        assert eval_sets[0].source_path == str(Path("subdir") / "eval1.json")
