@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.20] - 2026-02-02
+
+### Added
+- Interactive Rich Live progress display during evaluation execution with real-time updates
+- Per-task child progress showing provider execution and individual evaluator status
+- Status markers: ▸ in-progress (yellow), ✓ completed (green), ✗ failed (red) for each step
+- Evaluator scores shown inline in progress display on completion
+- Recently completed tasks shown with overall pass/fail status and duration
+
+### Changed
+- Replaced static log messages with Rich-based configuration summary panels (Evaluation Configuration, Providers, Datasets, Evaluators, Reporters)
+- Progress display uses `__rich_console__` renderable for thread-safe auto-refresh without deadlocks
+- Provider progress shows actual turn count from result on completion
+- HTML report: evaluator-first layout with score bars, thresholds, and expandable details
+- HTML report: compact conversation history with side-by-side actual vs expected, chat-style markdown rendering
+- HTML report: "View Full Response" per turn showing tools with args/results, sub-agents, and expected tools comparison
+- HTML report: evaluator summary badges on each conversation turn
+- HTML report: simple scalar metadata as inline data points, complex values as expandable JSON blocks
+
 ## [1.0.19] - 2026-02-02
 
 ### Added
