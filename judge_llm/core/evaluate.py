@@ -605,7 +605,10 @@ def _execute_evaluations(
     """
     from rich.console import Console
     from rich.live import Live
+    from rich.table import Table
     from rich.text import Text
+    from rich import box
+    import threading
 
     logger = get_logger()
     console = Console()
@@ -622,35 +625,115 @@ def _execute_evaluations(
     total = len(tasks)
     logger.debug(f"Total tasks to execute: {total}")
 
-    # Track wall-clock time for the entire execution
     import time
     start_time = time.time()
     completed = 0
+    # Track in-flight and recently completed tasks for the live display
+    in_flight = {}       # key -> (eval_id, provider_type, run_num, start_time, progress_key)
+    recent_done = []     # list of (eval_id, provider_type, run_num, success, duration)
+    # Per-task child progress: progress_key -> list of (step_label, status)
+    # status: "in_progress", "completed", "failed"
+    task_progress = {}   # progress_key -> list of (label, status)
+    _lock = threading.Lock()
+    MAX_RECENT = 5
+    _task_counter = 0
 
-    def _make_status(phase: str, detail: str = "") -> Text:
-        elapsed = time.time() - start_time
-        parts = Text()
-        parts.append(f"  [{completed}/{total}] ", style="bold cyan")
-        parts.append(f"{phase}", style="bold")
-        if detail:
-            parts.append(f" {detail}", style="dim")
-        parts.append(f"  ({elapsed:.1f}s)", style="dim")
-        return parts
+    class _DisplayRenderable:
+        """Rich calls __rich_console__ on each refresh, rebuilding the display."""
+        def __rich_console__(self, console, options):
+            elapsed = time.time() - start_time
+            mode = "parallel" if parallel_execution else "sequential"
 
-    with Live(_make_status("Starting evaluation..."), console=console, refresh_per_second=4, transient=True) as live:
+            outer = Table(box=None, show_header=False, padding=(0, 0))
+            outer.add_column()
+
+            header = Text()
+            header.append(f"  [{completed}/{total}] ", style="bold cyan")
+            header.append(f"Evaluating ", style="bold")
+            header.append(f"({mode}", style="dim")
+            if parallel_execution:
+                header.append(f", {max_workers} workers", style="dim")
+            header.append(f")  ", style="dim")
+            header.append(f"{elapsed:.1f}s", style="dim")
+            outer.add_row(header)
+
+            with _lock:
+                for _fut, (eid, ptype, rnum, st, pkey) in list(in_flight.items()):
+                    task_elapsed = time.time() - st
+                    line = Text()
+                    line.append("    ▶ ", style="bold yellow")
+                    line.append(f"{eid}", style="bold")
+                    line.append(f"  provider={ptype} run={rnum}", style="dim")
+                    line.append(f"  ({task_elapsed:.1f}s)", style="dim")
+                    outer.add_row(line)
+
+                    steps = task_progress.get(pkey, [])
+                    for step_label, step_status in steps:
+                        child = Text()
+                        if step_status == "completed":
+                            child.append("      ✓ ", style="green")
+                            child.append(step_label, style="dim")
+                        elif step_status == "failed":
+                            child.append("      ✗ ", style="red")
+                            child.append(step_label, style="red")
+                        else:
+                            child.append("      ▸ ", style="yellow")
+                            child.append(step_label, style="yellow")
+                        outer.add_row(child)
+
+                for eid, ptype, rnum, success, dur in recent_done:
+                    line = Text()
+                    if success:
+                        line.append("    ✓ ", style="bold green")
+                    else:
+                        line.append("    ✗ ", style="bold red")
+                    line.append(f"{eid}", style="bold" if not success else "")
+                    line.append(f"  provider={ptype} run={rnum}", style="dim")
+                    line.append(f"  ({dur:.1f}s)", style="dim")
+                    outer.add_row(line)
+
+            yield outer
+
+    display = _DisplayRenderable()
+
+    def _make_progress_cb(task_key):
+        """Create a progress callback for a task that updates child steps.
+        Only mutates shared data; Rich's Live auto-refresh renders it."""
+        def _cb(step_label, status="in_progress"):
+            with _lock:
+                steps = task_progress.setdefault(task_key, [])
+                for i, (lbl, _) in enumerate(steps):
+                    if lbl == step_label:
+                        steps[i] = (step_label, status)
+                        return
+                steps.append((step_label, status))
+        return _cb
+
+    with Live(display, console=console, refresh_per_second=4, transient=True) as live:
         if parallel_execution and len(tasks) > 1:
             logger.debug(f"Executing in parallel with {max_workers} workers")
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {}
                 for task in tasks:
                     _, eval_case, provider, _, run_num = task
-                    futures[executor.submit(_execute_single_task, *task)] = (
-                        eval_case.eval_id, provider.get_provider_type(), run_num
+                    _task_counter += 1
+                    tk = _task_counter
+                    fut = executor.submit(
+                        _execute_single_task, *task,
+                        progress_cb=_make_progress_cb(tk)
                     )
-                live.update(_make_status("Running evaluations in parallel...", f"({max_workers} workers)"))
+                    futures[fut] = (
+                        eval_case.eval_id, provider.get_provider_type(), run_num, tk
+                    )
+                    with _lock:
+                        in_flight[fut] = (
+                            eval_case.eval_id, provider.get_provider_type(),
+                            run_num, time.time(), tk
+                        )
+                live.update(display)
 
                 for future in as_completed(futures):
-                    eval_id, prov_type, run_num = futures[future]
+                    eval_id, prov_type, run_num, task_key = futures[future]
                     success = False
                     try:
                         exec_run = future.result()
@@ -658,33 +741,53 @@ def _execute_evaluations(
                         success = exec_run.overall_success
                     except Exception as e:
                         logger.error(f"Task failed with error: {e}")
+
+                    with _lock:
+                        task_start = in_flight.pop(future, (None, None, None, start_time, None))[3]
+                        dur = time.time() - task_start
+                        recent_done.append((eval_id, prov_type, run_num, success, dur))
+                        if len(recent_done) > MAX_RECENT:
+                            recent_done.pop(0)
+                        task_progress.pop(task_key, None)
+
                     completed += 1
-                    status = "✓" if success else "✗"
-                    live.update(_make_status(
-                        f"{status} {eval_id}",
-                        f"provider={prov_type} run={run_num}"
-                    ))
+                    live.update(display)
         else:
             logger.debug("Executing sequentially")
             for task in tasks:
                 _, eval_case, provider, _, run_num = task
-                live.update(_make_status(
-                    f"▶ {eval_case.eval_id}",
-                    f"provider={provider.get_provider_type()} run={run_num}"
-                ))
+                task_start = time.time()
+                sentinel = object()
+                _task_counter += 1
+                task_key = _task_counter
+                with _lock:
+                    in_flight[sentinel] = (
+                        eval_case.eval_id, provider.get_provider_type(),
+                        run_num, task_start, task_key
+                    )
+                live.update(display)
+
                 success = False
                 try:
-                    exec_run = _execute_single_task(*task)
+                    exec_run = _execute_single_task(
+                        *task,
+                        progress_cb=_make_progress_cb(task_key)
+                    )
                     execution_runs.append(exec_run)
                     success = exec_run.overall_success
                 except Exception as e:
                     logger.error(f"Task failed with error: {e}")
+
+                with _lock:
+                    in_flight.pop(sentinel, None)
+                    dur = time.time() - task_start
+                    recent_done.append((eval_case.eval_id, provider.get_provider_type(), run_num, success, dur))
+                    if len(recent_done) > MAX_RECENT:
+                        recent_done.pop(0)
+                    task_progress.pop(task_key, None)
+
                 completed += 1
-                status = "✓" if success else "✗"
-                live.update(_make_status(
-                    f"{status} {eval_case.eval_id}",
-                    f"provider={provider.get_provider_type()} run={run_num}"
-                ))
+                live.update(display)
 
     wall_clock_time = time.time() - start_time
     console.print(f"  [bold green]✓[/bold green] Completed {total} evaluation(s) in {wall_clock_time:.1f}s")
@@ -698,10 +801,18 @@ def _execute_single_task(
     provider: BaseProvider,
     evaluators: List[BaseEvaluator],
     run_number: int,
+    progress_cb=None,
 ) -> ExecutionRun:
     """Execute a single evaluation task"""
     logger = get_logger()
     execution_id = str(uuid.uuid4())
+
+    def _report(label, status="in_progress"):
+        if progress_cb:
+            try:
+                progress_cb(label, status)
+            except Exception:
+                pass
 
     logger.debug(
         f"Executing: eval_case={eval_case.eval_id}, "
@@ -737,6 +848,9 @@ def _execute_single_task(
         import time
         start_time = time.time()
 
+        num_turns = len(eval_case.conversation)
+        _report(f"Provider ({num_turns} turns)")
+
         with trace_span("judge_llm.provider.execute", attributes={
             "judge_llm.provider_type": provider.get_provider_type(),
             "judge_llm.agent_id": provider.agent_id,
@@ -751,8 +865,11 @@ def _execute_single_task(
                 )
             try:
                 provider_result = provider.execute(eval_case)
+                actual_turns = len(provider_result.conversation_history)
+                _report(f"Provider ({actual_turns} turns)", "completed")
             except Exception as e:
                 logger.error(f"Provider execution failed: {e}")
+                _report(f"Provider ({num_turns} turns)", "failed")
                 provider_result = ProviderResult(
                     conversation_history=[],
                     success=False,
@@ -800,15 +917,16 @@ def _execute_single_task(
 
         # Run evaluators
         evaluator_results = []
-        for evaluator in evaluators:
+        for eval_idx, evaluator in enumerate(evaluators, 1):
+            eval_name = evaluator.get_evaluator_name()
+            _report(f"[{eval_idx}/{len(evaluators)}] {eval_name}")
             with trace_span("judge_llm.evaluator.evaluate", attributes={
-                "judge_llm.evaluator.name": evaluator.get_evaluator_name(),
+                "judge_llm.evaluator.name": eval_name,
             }) as eval_span:
                 try:
                     evaluator_specific_config = None
                     if hasattr(eval_case, 'evaluator_config') and eval_case.evaluator_config:
-                        evaluator_name = evaluator.get_evaluator_name()
-                        evaluator_specific_config = eval_case.evaluator_config.get(evaluator_name, None)
+                        evaluator_specific_config = eval_case.evaluator_config.get(eval_name, None)
 
                     eval_result = evaluator.evaluate(
                         eval_case=eval_case,
@@ -817,6 +935,9 @@ def _execute_single_task(
                         eval_config=evaluator_specific_config
                     )
                     evaluator_results.append(eval_result)
+                    status = "completed" if eval_result.passed else "failed"
+                    score_str = f" ({eval_result.score:.2f})" if eval_result.score is not None else ""
+                    _report(f"[{eval_idx}/{len(evaluators)}] {eval_name}{score_str}", status)
 
                     if eval_span:
                         set_span_attributes(eval_span, {
@@ -832,7 +953,8 @@ def _execute_single_task(
                             output_value=eval_output,
                         )
                 except Exception as e:
-                    logger.error(f"Evaluator {evaluator.get_evaluator_name()} failed: {e}")
+                    logger.error(f"Evaluator {eval_name} failed: {e}")
+                    _report(f"[{eval_idx}/{len(evaluators)}] {eval_name}", "failed")
 
         # Determine overall success
         overall_success = provider_result.success and all(e.passed for e in evaluator_results)
