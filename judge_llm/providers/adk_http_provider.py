@@ -25,7 +25,7 @@ from judge_llm.providers.adk_http.event_mapper import EventMapper
 from judge_llm.providers.adk_http.session_manager import SessionManager
 from judge_llm.providers.adk_http.pricing import PricingCalculator
 from judge_llm.utils.logger import get_logger
-from judge_llm.utils.telemetry import trace_span, set_span_attributes, record_span_event
+from judge_llm.utils.telemetry import trace_span, set_span_attributes, record_span_event, set_openinference_attributes
 
 logger = get_logger()
 
@@ -327,7 +327,21 @@ class ADKHTTPProvider(BaseProvider):
                     set_span_attributes(span, {
                         "http.status_code": response.status_code,
                         "judge_llm.adk_http.session_id": session_id,
+                        "http.request.method": "POST",
+                        "http.request.url": url,
+                        "http.request.headers": str(headers),
+                        "http.request.body": str(payload),
+                        "http.response.status_code": response.status_code,
+                        "http.response.body": response.text[:2000] if response.text else "",
                     })
+                    set_openinference_attributes(
+                        span,
+                        span_kind="TOOL",
+                        input_value=f"POST {url}",
+                        output_value=f"session_id={session_id}, status={response.status_code}",
+                        session_id=session_id,
+                        user_id=user_id,
+                    )
                 return session_id
 
     def _build_auth_headers(self) -> Dict[str, str]:
@@ -407,10 +421,25 @@ class ADKHTTPProvider(BaseProvider):
         events: List[ADKEvent] = []
         last_error: Optional[Exception] = None
 
+        # Sanitize payload for logging (remove state to reduce noise)
+        payload_for_trace = {k: v for k, v in payload.items() if k != "state"}
+
         with trace_span("judge_llm.adk_http.send_and_collect", attributes={
             "judge_llm.adk_http.endpoint": self.endpoint_url,
             "judge_llm.adk_http.session_id": session_id,
+            "http.request.method": "POST",
+            "http.request.url": self.endpoint_url,
+            "http.request.headers": str({k: v for k, v in headers.items() if k.lower() != "authorization"}),
+            "http.request.body": str(payload_for_trace)[:4000],
         }) as span:
+            if span:
+                set_openinference_attributes(
+                    span,
+                    span_kind="LLM",
+                    session_id=session_id,
+                    input_value=message,
+                    model_name=self.model,
+                )
             # Retry logic with exponential backoff
             for attempt in range(self.retry_attempts):
                 try:
@@ -466,12 +495,32 @@ class ADKHTTPProvider(BaseProvider):
                                     logger.warning(f"Failed to parse event: {e}")
 
                         if span:
+                            # Capture response body (truncated for safety)
+                            response_body = response.text[:4000] if response.text else ""
                             set_span_attributes(span, {
                                 "http.status_code": response.status_code,
+                                "http.response.status_code": response.status_code,
+                                "http.response.headers": str(dict(response.headers)),
+                                "http.response.body": response_body,
                                 "judge_llm.adk_http.event_count": len(events),
                                 "judge_llm.adk_http.content_type": content_type,
                                 "judge_llm.adk_http.attempts": attempt + 1,
                             })
+                            # Extract agent response text from events for Phoenix output
+                            agent_texts = []
+                            for ev in events:
+                                if ev.content and ev.content.parts:
+                                    for p in ev.content.parts:
+                                        if hasattr(p, 'text') and p.text:
+                                            agent_texts.append(p.text)
+                            output_text = " | ".join(agent_texts) if agent_texts else response_body[:500]
+                            set_openinference_attributes(
+                                span,
+                                output_value=output_text,
+                                token_count_prompt=self._event_mapper.aggregate_token_usage(events).get("prompt_tokens"),
+                                token_count_completion=self._event_mapper.aggregate_token_usage(events).get("completion_tokens"),
+                                token_count_total=self._event_mapper.aggregate_token_usage(events).get("total_tokens"),
+                            )
                         return events
 
                 except httpx.HTTPStatusError as e:

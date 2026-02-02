@@ -6,7 +6,7 @@
   A lightweight, extensible Python framework for **evaluating and comparing LLM providers**. Test your AI agents systematically with multi-turn conversations, cost tracking, and comprehensive reporting.
 
   [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
-  [![Version](https://img.shields.io/badge/version-1.0.6-green.svg)](https://github.com/HiHelloAI/judge-llm)
+  [![Version](https://img.shields.io/badge/version-1.0.7-green.svg)](https://github.com/HiHelloAI/judge-llm)
   [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
   [![PyPI](https://img.shields.io/pypi/v/judge-llm.svg)](https://pypi.org/project/judge-llm/)
   [![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-optional-blueviolet.svg)](https://opentelemetry.io/)
@@ -512,14 +512,20 @@ export PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006
 Every evaluation creates a span tree with detailed attributes:
 
 ```
-judge_llm.evaluate
-├── judge_llm.execute_task          [per eval_case x provider x run]
-│   ├── judge_llm.provider.execute  (success, cost, tokens)
-│   │   ├── adk_http.create_session (HTTP status, session ID)
-│   │   └── adk_http.send_and_collect (events, retries, errors)
-│   └── judge_llm.evaluator.evaluate (score, passed/failed)
-└── judge_llm.reporter.generate     [per reporter]
+judge_llm.evaluate                                [CHAIN]
+├── judge_llm.execute_task                        [CHAIN, session.id]
+│   ├── judge_llm.provider.execute                [LLM, input/output, tokens]
+│   │   ├── adk_http.create_session               [TOOL, HTTP req/res]
+│   │   └── adk_http.send_and_collect             [LLM, HTTP req/res, tokens]
+│   └── judge_llm.evaluator.evaluate              [EVALUATOR, score]
+└── judge_llm.reporter.generate                   [per reporter]
 ```
+
+**Phoenix-specific features:**
+- **Sessions** — spans are grouped by `session.id` for multi-turn conversation tracking
+- **Input/Output** — full request payloads and agent response text visible on each span
+- **HTTP details** — request/response bodies, headers, and status codes on HTTP spans
+- **LLM metadata** — model name, token counts (prompt/completion/total) via OpenInference conventions
 
 See the [Telemetry Guide](docs/docs/guides/telemetry.md) for complete documentation.
 

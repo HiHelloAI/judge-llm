@@ -162,18 +162,29 @@ judge-llm run --config config.yaml
 
 After running, open `http://localhost:6006` to see your traces.
 
+### What Phoenix Shows
+
+With OpenInference semantic conventions (automatically included in `judge-llm[phoenix]`), Phoenix displays:
+
+- **Sessions** — evaluation runs grouped by session ID, showing multi-turn conversation flow
+- **Input/Output** — actual user messages and agent response text on each span
+- **LLM calls** — model name, token counts (prompt/completion/total), and cost
+- **HTTP details** — full request/response payloads and headers on ADK HTTP spans
+- **Evaluator results** — pass/fail status, scores, and details
+- **Span classification** — spans categorized as CHAIN, LLM, TOOL, or EVALUATOR
+
 ## Span Hierarchy
 
 When telemetry is enabled, Judge LLM creates the following span tree for each evaluation:
 
 ```
-judge_llm.evaluate
-├── judge_llm.execute_task              [per eval_case x provider x run]
-│   ├── judge_llm.provider.execute
-│   │   ├── judge_llm.adk_http.create_session    (ADK HTTP provider only)
-│   │   └── judge_llm.adk_http.send_and_collect  (ADK HTTP provider only)
-│   └── judge_llm.evaluator.evaluate    [per evaluator]
-└── judge_llm.reporter.generate         [per reporter]
+judge_llm.evaluate                                [CHAIN]
+├── judge_llm.execute_task                        [CHAIN, session.id, input/output]
+│   ├── judge_llm.provider.execute                [LLM, input/output, tokens, model]
+│   │   ├── judge_llm.adk_http.create_session     [TOOL, HTTP req/res body]
+│   │   └── judge_llm.adk_http.send_and_collect   [LLM, HTTP req/res body, tokens]
+│   └── judge_llm.evaluator.evaluate              [EVALUATOR, score, output]
+└── judge_llm.reporter.generate                   [per reporter]
 ```
 
 ## Span Attributes
@@ -201,6 +212,10 @@ judge_llm.evaluate
 | `judge_llm.provider_type` | str | Provider type (e.g., "gemini", "adk_http") |
 | `judge_llm.run_number` | int | Run number (1-based) |
 | `judge_llm.task.success` | bool | Whether the task passed all evaluators |
+| `openinference.span.kind` | str | `CHAIN` |
+| `session.id` | str | Session ID for Phoenix grouping |
+| `input.value` | str | User message(s) from the eval case |
+| `output.value` | str | Agent response text |
 
 ### Provider Span: `judge_llm.provider.execute`
 
@@ -211,6 +226,14 @@ judge_llm.evaluate
 | `judge_llm.provider.success` | bool | Provider execution success |
 | `judge_llm.provider.cost` | float | Execution cost |
 | `judge_llm.provider.token_usage.total` | int | Total tokens used |
+| `openinference.span.kind` | str | `LLM` |
+| `session.id` | str | Session ID for Phoenix grouping |
+| `input.value` | str | User input text |
+| `output.value` | str | Agent response text |
+| `llm.model_name` | str | Model name |
+| `llm.token_count.prompt` | int | Prompt token count |
+| `llm.token_count.completion` | int | Completion token count |
+| `llm.token_count.total` | int | Total token count |
 
 **Events recorded on failure:**
 
@@ -229,6 +252,16 @@ judge_llm.evaluate
 | `judge_llm.adk_http.user_id` | str | User ID |
 | `http.status_code` | int | HTTP response status code |
 | `judge_llm.adk_http.session_id` | str | Created session ID |
+| `http.request.method` | str | `POST` |
+| `http.request.url` | str | Full request URL |
+| `http.request.headers` | str | Request headers |
+| `http.request.body` | str | Request payload |
+| `http.response.body` | str | Response body (truncated to 2KB) |
+| `openinference.span.kind` | str | `TOOL` |
+| `input.value` | str | `POST {url}` |
+| `output.value` | str | Session ID and status |
+| `session.id` | str | Created session ID |
+| `user.id` | str | User ID |
 
 #### `judge_llm.adk_http.send_and_collect`
 
@@ -237,9 +270,24 @@ judge_llm.evaluate
 | `judge_llm.adk_http.endpoint` | str | Request endpoint URL |
 | `judge_llm.adk_http.session_id` | str | Session ID |
 | `http.status_code` | int | HTTP response status code |
+| `http.request.method` | str | `POST` |
+| `http.request.url` | str | Full request URL |
+| `http.request.headers` | str | Request headers (auth excluded) |
+| `http.request.body` | str | Request payload (truncated to 4KB, state excluded) |
+| `http.response.status_code` | int | Response status code |
+| `http.response.headers` | str | Response headers |
+| `http.response.body` | str | Response body (truncated to 4KB) |
 | `judge_llm.adk_http.event_count` | int | Number of SSE events received |
 | `judge_llm.adk_http.content_type` | str | Response content type |
 | `judge_llm.adk_http.attempts` | int | Number of attempts (1 = no retries) |
+| `openinference.span.kind` | str | `LLM` |
+| `session.id` | str | Session ID |
+| `input.value` | str | User message text |
+| `output.value` | str | Agent response text extracted from events |
+| `llm.model_name` | str | Model name |
+| `llm.token_count.prompt` | int | Prompt token count |
+| `llm.token_count.completion` | int | Completion token count |
+| `llm.token_count.total` | int | Total token count |
 
 **Events recorded on retries:**
 
@@ -256,6 +304,8 @@ judge_llm.evaluate
 | `judge_llm.evaluator.name` | str | Evaluator name |
 | `judge_llm.evaluator.passed` | bool | Whether the evaluator passed |
 | `judge_llm.evaluator.score` | float | Evaluator score (-1 if N/A) |
+| `openinference.span.kind` | str | `EVALUATOR` |
+| `output.value` | str | Evaluator result summary (passed, score, details) |
 
 ### Reporter Span: `judge_llm.reporter.generate`
 
@@ -297,10 +347,13 @@ judge-llm run --config config.yaml --telemetry --telemetry-exporter phoenix
 ```
 
 Open `http://localhost:6006` to see:
-- Full trace waterfall for each evaluation
-- Token usage and costs per provider call
+- **Sessions** grouping related spans by evaluation case
+- **Input/Output** showing user messages and agent responses on each span
+- **LLM calls** with model name, token counts, and cost
+- **HTTP payloads** with full request/response bodies and headers
+- **Evaluator results** with scores, pass/fail, and details
+- Full trace waterfall with timing for each step
 - Error details with retry history
-- Evaluator scores and pass/fail status
 
 ### Send Traces to Jaeger
 
