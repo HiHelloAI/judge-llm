@@ -251,8 +251,21 @@
     function toggleEvalDetails(idx) {
         const row = document.getElementById(`eval-detail-${idx}`);
         const btn = document.getElementById(`eval-btn-${idx}`);
-        const hidden = row.classList.toggle('hidden');
-        btn.textContent = hidden ? 'View Details' : 'Hide';
+        const isHidden = row.classList.contains('hidden');
+
+        // Collapse all other open eval details first
+        document.querySelectorAll('[id^="eval-detail-"]').forEach(el => {
+            if (el !== row && !el.classList.contains('hidden')) {
+                el.classList.add('hidden');
+                const otherIdx = el.id.replace('eval-detail-', '');
+                const otherBtn = document.getElementById(`eval-btn-${otherIdx}`);
+                if (otherBtn) otherBtn.textContent = 'View Details';
+            }
+        });
+
+        // Toggle the clicked one
+        row.classList.toggle('hidden', !isHidden);
+        btn.textContent = isHidden ? 'Hide' : 'View Details';
     }
 
     function toggleConvFull(idx) {

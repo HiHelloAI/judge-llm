@@ -168,12 +168,13 @@ class ConfigMerger:
                 return result
 
         # Merge by type (default behavior)
+        # Use composite key (type + name/class_name) to handle multiple custom evaluators
         merged = []
         default_by_type = {
-            eval.get("type"): eval for eval in defaults if eval.get("type")
+            self._evaluator_key(eval): eval for eval in defaults if eval.get("type")
         }
         override_by_type = {
-            eval.get("type"): eval for eval in overrides if eval.get("type")
+            self._evaluator_key(eval): eval for eval in overrides if eval.get("type")
         }
 
         # Start with defaults
@@ -197,6 +198,26 @@ class ConfigMerger:
                 merged.append(override_eval.copy())
 
         return merged
+
+    @staticmethod
+    def _evaluator_key(eval_config: Dict[str, Any]) -> str:
+        """Generate a unique key for an evaluator config.
+
+        For custom evaluators, includes name/class_name/module_path to
+        distinguish different custom evaluators that all share type 'custom'.
+        """
+        eval_type = eval_config.get("type", "")
+        if eval_type == "custom":
+            # Use name, class_name, or module_path as disambiguator
+            disambiguator = (
+                eval_config.get("name")
+                or eval_config.get("class_name")
+                or eval_config.get("module_path")
+                or eval_config.get("module")
+                or ""
+            )
+            return f"custom:{disambiguator}"
+        return eval_type
 
     def _merge_reporters(
         self, defaults: List[Dict[str, Any]], overrides: List[Dict[str, Any]]
