@@ -36,6 +36,8 @@ judge-llm run --config <path> [options]
 | `--output` | `-o` | Output path for report | No |
 | `--db-path` | | Database path (for database reporter) | No |
 | `--no-validate` | | Skip configuration validation | No |
+| `--telemetry` | `-t` | Enable OpenTelemetry tracing | No |
+| `--telemetry-exporter` | | Exporter type: `console`, `otlp`, `phoenix` (default: `console`) | No |
 
 **Examples:**
 
@@ -61,6 +63,25 @@ Skip validation (faster):
 ```bash
 judge-llm run --config test.yaml --no-validate
 ```
+
+With telemetry (console output):
+```bash
+judge-llm run --config test.yaml --telemetry
+```
+
+With telemetry (OTLP exporter):
+```bash
+judge-llm run --config test.yaml --telemetry --telemetry-exporter otlp
+```
+
+With telemetry (Arize Phoenix):
+```bash
+judge-llm run --config test.yaml --telemetry --telemetry-exporter phoenix
+```
+
+:::note
+Telemetry requires optional dependencies. Install with `pip install judge-llm[telemetry]` or `pip install judge-llm[phoenix]`.
+:::
 
 ### list
 

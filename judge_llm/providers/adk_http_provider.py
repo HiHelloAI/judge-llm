@@ -25,6 +25,7 @@ from judge_llm.providers.adk_http.event_mapper import EventMapper
 from judge_llm.providers.adk_http.session_manager import SessionManager
 from judge_llm.providers.adk_http.pricing import PricingCalculator
 from judge_llm.utils.logger import get_logger
+from judge_llm.utils.telemetry import trace_span, set_span_attributes, record_span_event
 
 logger = get_logger()
 
@@ -311,14 +312,23 @@ class ADKHTTPProvider(BaseProvider):
         if initial_state:
             payload["state"] = initial_state
 
-        with httpx.Client(
-            verify=self.verify_ssl,
-            timeout=httpx.Timeout(self.timeout),
-        ) as client:
-            response = client.post(url, json=payload, headers=headers)
-            response.raise_for_status()
-
-            return session_id
+        with trace_span("judge_llm.adk_http.create_session", attributes={
+            "judge_llm.adk_http.endpoint": self.base_url,
+            "judge_llm.adk_http.app_name": app_name,
+            "judge_llm.adk_http.user_id": user_id,
+        }) as span:
+            with httpx.Client(
+                verify=self.verify_ssl,
+                timeout=httpx.Timeout(self.timeout),
+            ) as client:
+                response = client.post(url, json=payload, headers=headers)
+                response.raise_for_status()
+                if span:
+                    set_span_attributes(span, {
+                        "http.status_code": response.status_code,
+                        "judge_llm.adk_http.session_id": session_id,
+                    })
+                return session_id
 
     def _build_auth_headers(self) -> Dict[str, str]:
         """Build authentication headers based on auth_type.
@@ -397,39 +407,55 @@ class ADKHTTPProvider(BaseProvider):
         events: List[ADKEvent] = []
         last_error: Optional[Exception] = None
 
-        # Retry logic with exponential backoff
-        for attempt in range(self.retry_attempts):
-            try:
-                with httpx.Client(
-                    verify=self.verify_ssl,
-                    timeout=httpx.Timeout(self.timeout),
-                ) as client:
-                    # First try non-streaming request (JSON array response)
-                    response = client.post(
-                        self.endpoint_url,
-                        json=payload,
-                        headers=headers,
-                    )
-                    response.raise_for_status()
+        with trace_span("judge_llm.adk_http.send_and_collect", attributes={
+            "judge_llm.adk_http.endpoint": self.endpoint_url,
+            "judge_llm.adk_http.session_id": session_id,
+        }) as span:
+            # Retry logic with exponential backoff
+            for attempt in range(self.retry_attempts):
+                try:
+                    with httpx.Client(
+                        verify=self.verify_ssl,
+                        timeout=httpx.Timeout(self.timeout),
+                    ) as client:
+                        # First try non-streaming request (JSON array response)
+                        response = client.post(
+                            self.endpoint_url,
+                            json=payload,
+                            headers=headers,
+                        )
+                        response.raise_for_status()
 
-                    content_type = response.headers.get("content-type", "")
+                        content_type = response.headers.get("content-type", "")
 
-                    if "text/event-stream" in content_type:
-                        # Handle SSE streaming response
-                        for event in self._sse_parser.parse_string(response.text):
-                            events.append(event)
-                            if event.actions and event.actions.stateDelta:
-                                self._session_manager.update_state(
-                                    session_id,
-                                    event.actions.stateDelta,
-                                )
-                    else:
-                        # Handle JSON array response
-                        data = response.json()
-                        if isinstance(data, list):
-                            for item in data:
+                        if "text/event-stream" in content_type:
+                            # Handle SSE streaming response
+                            for event in self._sse_parser.parse_string(response.text):
+                                events.append(event)
+                                if event.actions and event.actions.stateDelta:
+                                    self._session_manager.update_state(
+                                        session_id,
+                                        event.actions.stateDelta,
+                                    )
+                        else:
+                            # Handle JSON array response
+                            data = response.json()
+                            if isinstance(data, list):
+                                for item in data:
+                                    try:
+                                        event = ADKEvent.model_validate(item)
+                                        events.append(event)
+                                        if event.actions and event.actions.stateDelta:
+                                            self._session_manager.update_state(
+                                                session_id,
+                                                event.actions.stateDelta,
+                                            )
+                                    except Exception as e:
+                                        logger.warning(f"Failed to parse event: {e}")
+                            elif isinstance(data, dict):
+                                # Single event response
                                 try:
-                                    event = ADKEvent.model_validate(item)
+                                    event = ADKEvent.model_validate(data)
                                     events.append(event)
                                     if event.actions and event.actions.stateDelta:
                                         self._session_manager.update_state(
@@ -438,53 +464,64 @@ class ADKHTTPProvider(BaseProvider):
                                         )
                                 except Exception as e:
                                     logger.warning(f"Failed to parse event: {e}")
-                        elif isinstance(data, dict):
-                            # Single event response
-                            try:
-                                event = ADKEvent.model_validate(data)
-                                events.append(event)
-                                if event.actions and event.actions.stateDelta:
-                                    self._session_manager.update_state(
-                                        session_id,
-                                        event.actions.stateDelta,
-                                    )
-                            except Exception as e:
-                                logger.warning(f"Failed to parse event: {e}")
 
-                    return events
+                        if span:
+                            set_span_attributes(span, {
+                                "http.status_code": response.status_code,
+                                "judge_llm.adk_http.event_count": len(events),
+                                "judge_llm.adk_http.content_type": content_type,
+                                "judge_llm.adk_http.attempts": attempt + 1,
+                            })
+                        return events
 
-            except httpx.HTTPStatusError as e:
-                last_error = e
-                try:
-                    error_text = e.response.text[:200]
-                except Exception:
-                    error_text = str(e)
-                logger.warning(
-                    f"HTTP error on attempt {attempt + 1}/{self.retry_attempts}: "
-                    f"{e.response.status_code} - {error_text}"
-                )
+                except httpx.HTTPStatusError as e:
+                    last_error = e
+                    try:
+                        error_text = e.response.text[:200]
+                    except Exception:
+                        error_text = str(e)
+                    logger.warning(
+                        f"HTTP error on attempt {attempt + 1}/{self.retry_attempts}: "
+                        f"{e.response.status_code} - {error_text}"
+                    )
+                    if span:
+                        record_span_event(span, "http_error", {
+                            "attempt": attempt + 1,
+                            "status_code": e.response.status_code,
+                            "error": error_text,
+                        })
 
-            except httpx.RequestError as e:
-                last_error = e
-                logger.warning(
-                    f"Request error on attempt {attempt + 1}/{self.retry_attempts}: {e}"
-                )
+                except httpx.RequestError as e:
+                    last_error = e
+                    logger.warning(
+                        f"Request error on attempt {attempt + 1}/{self.retry_attempts}: {e}"
+                    )
+                    if span:
+                        record_span_event(span, "request_error", {
+                            "attempt": attempt + 1,
+                            "error": str(e),
+                        })
 
-            except Exception as e:
-                last_error = e
-                logger.warning(
-                    f"Unexpected error on attempt {attempt + 1}/{self.retry_attempts}: {e}"
-                )
+                except Exception as e:
+                    last_error = e
+                    logger.warning(
+                        f"Unexpected error on attempt {attempt + 1}/{self.retry_attempts}: {e}"
+                    )
+                    if span:
+                        record_span_event(span, "unexpected_error", {
+                            "attempt": attempt + 1,
+                            "error": str(e),
+                        })
 
-            # Exponential backoff before retry
-            if attempt < self.retry_attempts - 1:
-                delay = self.retry_delay * (2**attempt)
-                logger.debug(f"Retrying in {delay}s...")
-                time.sleep(delay)
+                # Exponential backoff before retry
+                if attempt < self.retry_attempts - 1:
+                    delay = self.retry_delay * (2**attempt)
+                    logger.debug(f"Retrying in {delay}s...")
+                    time.sleep(delay)
 
-        raise RuntimeError(
-            f"Failed after {self.retry_attempts} attempts: {last_error}"
-        )
+            raise RuntimeError(
+                f"Failed after {self.retry_attempts} attempts: {last_error}"
+            )
 
     async def execute_async(self, eval_case: EvalCase) -> ProviderResult:
         """Execute evaluation case asynchronously.

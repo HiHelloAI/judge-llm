@@ -5,6 +5,12 @@
 
   A lightweight, extensible Python framework for **evaluating and comparing LLM providers**. Test your AI agents systematically with multi-turn conversations, cost tracking, and comprehensive reporting.
 
+  [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+  [![Version](https://img.shields.io/badge/version-1.0.6-green.svg)](https://github.com/HiHelloAI/judge-llm)
+  [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+  [![PyPI](https://img.shields.io/pypi/v/judge-llm.svg)](https://pypi.org/project/judge-llm/)
+  [![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-optional-blueviolet.svg)](https://opentelemetry.io/)
+
   [Quick Start](#quick-start) • [Features](#features) • [Examples](#testing-examples) • [Reports](#reports--dashboard)
 </div>
 
@@ -35,6 +41,7 @@ Perfect for regression testing, A/B testing providers, and ensuring production-g
 - **Default Config**: Reusable configurations with component registration
 - **Per-Test Overrides**: Fine-tune evaluator thresholds per test case
 - **Environment Variables**: Auto-loads `.env` for secure API key management
+- **Telemetry**: Optional OpenTelemetry tracing with Phoenix, Jaeger, and OTLP support
 
 ## Installation
 
@@ -63,6 +70,12 @@ pip install judge-llm[google_adk]
 
 # Install with dev dependencies
 pip install judge-llm[dev]
+
+# Install with OpenTelemetry support
+pip install judge-llm[telemetry]
+
+# Install with Arize Phoenix observability
+pip install judge-llm[phoenix]
 ```
 
 ### Setup Environment Variables
@@ -444,6 +457,71 @@ Persistent storage for:
 # Generate dashboard from database
 judge-llm dashboard --db results.db --output dashboard.html
 ```
+
+## Telemetry & Observability (OpenTelemetry)
+
+Judge LLM includes optional OpenTelemetry instrumentation for deep observability into evaluation runs. **Disabled by default** with zero overhead when not enabled.
+
+### Quick Start
+
+```bash
+# Install telemetry dependencies
+pip install judge-llm[telemetry]
+
+# Run with console tracing
+judge-llm run --config config.yaml --telemetry
+
+# Run with OTLP exporter (Jaeger, Grafana Tempo, etc.)
+judge-llm run --config config.yaml --telemetry --telemetry-exporter otlp
+```
+
+### Arize Phoenix Integration
+
+```bash
+# Install Phoenix support
+pip install judge-llm[phoenix]
+
+# Start Phoenix server
+pip install arize-phoenix && phoenix serve
+
+# Run with Phoenix tracing
+judge-llm run --config config.yaml --telemetry --telemetry-exporter phoenix
+# Open http://localhost:6006 to view traces
+```
+
+### Enable via YAML Config
+
+```yaml
+agent:
+  telemetry:
+    enabled: true
+    exporter: phoenix    # "console", "otlp", or "phoenix"
+    endpoint: http://localhost:6006
+```
+
+### Enable via Environment Variables
+
+```bash
+export JUDGE_LLM_TELEMETRY=true
+export OTEL_EXPORTER_TYPE=phoenix
+export PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006
+```
+
+### What Gets Traced
+
+Every evaluation creates a span tree with detailed attributes:
+
+```
+judge_llm.evaluate
+├── judge_llm.execute_task          [per eval_case x provider x run]
+│   ├── judge_llm.provider.execute  (success, cost, tokens)
+│   │   ├── adk_http.create_session (HTTP status, session ID)
+│   │   └── adk_http.send_and_collect (events, retries, errors)
+│   └── judge_llm.evaluator.evaluate (score, passed/failed)
+└── judge_llm.reporter.generate     [per reporter]
+```
+
+See the [Telemetry Guide](docs/docs/guides/telemetry.md) for complete documentation.
 
 ## Development
 

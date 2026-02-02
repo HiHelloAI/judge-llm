@@ -7,6 +7,7 @@ from judge_llm.core.evaluate import evaluate
 from judge_llm.core.config_validator import get_validator
 from judge_llm.core.registry import get_provider_registry, get_evaluator_registry, get_reporter_registry
 from judge_llm.utils.logger import get_logger, set_log_level
+from judge_llm.utils.telemetry import init_telemetry
 import yaml
 
 # Load environment variables from .env file if present
@@ -94,6 +95,19 @@ def main():
     type=click.Path(),
     help="Output path for report (for json/html reporters)",
 )
+@click.option(
+    "--telemetry",
+    "-t",
+    is_flag=True,
+    default=False,
+    help="Enable OpenTelemetry tracing (requires: pip install judge-llm[telemetry])",
+)
+@click.option(
+    "--telemetry-exporter",
+    type=click.Choice(["console", "otlp", "phoenix"], case_sensitive=False),
+    default="console",
+    help="Telemetry exporter type (default: console)",
+)
 def run(
     config,
     dataset,
@@ -107,10 +121,15 @@ def run(
     defaults,
     report,
     output,
+    telemetry,
+    telemetry_exporter,
 ):
     """Run LLM evaluation"""
     set_log_level(log_level)
     logger = get_logger()
+
+    if telemetry:
+        init_telemetry(exporter=telemetry_exporter)
 
     try:
         if config:

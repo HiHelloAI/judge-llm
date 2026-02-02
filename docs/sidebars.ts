@@ -27,6 +27,7 @@ const sidebars: SidebarsConfig = {
         'guides/configuration',
         'guides/evalset-format',
         'guides/environment-variables',
+        'guides/telemetry',
         'guides/default-configs',
       ],
     },

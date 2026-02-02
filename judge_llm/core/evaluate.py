@@ -26,6 +26,13 @@ from judge_llm.reporters.json_reporter import JSONReporter
 from judge_llm.reporters.html_reporter import HTMLReporter
 from judge_llm.reporters.database_reporter import DatabaseReporter
 from judge_llm.utils.logger import get_logger, set_log_level
+from judge_llm.utils.telemetry import (
+    trace_span,
+    set_span_attributes,
+    record_span_event,
+    maybe_init_from_config,
+    shutdown_telemetry,
+)
 
 
 def _print_configuration_summary(
@@ -178,9 +185,15 @@ def evaluate(
             "reporters": reporters or [{"type": "console"}],
         }
 
+    # Initialize telemetry from config if enabled
+    maybe_init_from_config(config_dict.get("agent", {}))
+
     logger.info("Starting Judge LLM evaluation")
 
-    return _evaluate_from_config(config_dict)
+    try:
+        return _evaluate_from_config(config_dict)
+    finally:
+        shutdown_telemetry()
 
 
 def _load_config(
@@ -271,25 +284,43 @@ def _evaluate_from_config(config: Dict[str, Any]) -> EvaluationReport:
 
     # Execute evaluations
     logger.info("▶ Starting evaluation...")
-    execution_runs, wall_clock_time = _execute_evaluations(
-        eval_sets=eval_sets,
-        providers=providers,
-        evaluators=evaluators,
-        num_runs=agent_config.get("num_runs", 1),
-        parallel_execution=agent_config.get("parallel_execution", False),
-        max_workers=agent_config.get("max_workers", 4),
-    )
+    with trace_span("judge_llm.evaluate", attributes={
+        "judge_llm.num_providers": len(providers),
+        "judge_llm.num_evaluators": len(evaluators),
+        "judge_llm.num_eval_sets": len(eval_sets),
+        "judge_llm.num_runs": agent_config.get("num_runs", 1),
+        "judge_llm.parallel": agent_config.get("parallel_execution", False),
+    }) as root_span:
+        execution_runs, wall_clock_time = _execute_evaluations(
+            eval_sets=eval_sets,
+            providers=providers,
+            evaluators=evaluators,
+            num_runs=agent_config.get("num_runs", 1),
+            parallel_execution=agent_config.get("parallel_execution", False),
+            max_workers=agent_config.get("max_workers", 4),
+        )
 
-    # Generate report
-    logger.debug("Generating evaluation report")
-    report = _generate_report(execution_runs, wall_clock_time)
+        # Generate report
+        logger.debug("Generating evaluation report")
+        report = _generate_report(execution_runs, wall_clock_time)
 
-    # Generate reports via reporters
-    logger.debug("Generating reports via reporters")
-    reporters = _initialize_reporters(reporters_config)
-    for reporter in reporters:
-        reporter.generate_report(report)
-        reporter.cleanup()
+        if root_span:
+            set_span_attributes(root_span, {
+                "judge_llm.total_executions": len(execution_runs),
+                "judge_llm.success_rate": report.success_rate,
+                "judge_llm.total_cost": report.total_cost,
+                "judge_llm.total_time": report.total_time,
+            })
+
+        # Generate reports via reporters
+        logger.debug("Generating reports via reporters")
+        reporters = _initialize_reporters(reporters_config)
+        for reporter in reporters:
+            with trace_span("judge_llm.reporter.generate", attributes={
+                "judge_llm.reporter.type": reporter.__class__.__name__,
+            }):
+                reporter.generate_report(report)
+                reporter.cleanup()
 
     # Cleanup resources
     logger.debug("Cleaning up resources")
@@ -582,73 +613,106 @@ def _execute_single_task(
         f"provider={provider.get_provider_type()}, run={run_number}"
     )
 
-    # Execute provider (track time at framework level)
-    import time
-    start_time = time.time()
+    with trace_span("judge_llm.execute_task", attributes={
+        "judge_llm.eval_case_id": eval_case.eval_id,
+        "judge_llm.eval_set_id": eval_set.eval_set_id,
+        "judge_llm.provider_type": provider.get_provider_type(),
+        "judge_llm.run_number": run_number,
+    }) as task_span:
 
-    try:
-        provider_result = provider.execute(eval_case)
-    except Exception as e:
-        logger.error(f"Provider execution failed: {e}")
-        provider_result = ProviderResult(
-            conversation_history=[],
-            success=False,
-            error=str(e),
-        )
+        # Execute provider (track time at framework level)
+        import time
+        start_time = time.time()
 
-    # Set time_taken at framework level if provider didn't set it
-    execution_time = time.time() - start_time
-    if provider_result.time_taken == 0:
-        # Create new result with updated time (Pydantic models are immutable)
-        provider_result = ProviderResult(
-            conversation_history=provider_result.conversation_history,
-            cost=provider_result.cost,
-            time_taken=execution_time,
-            token_usage=provider_result.token_usage,
-            metadata=provider_result.metadata,
-            success=provider_result.success,
-            error=provider_result.error,
-        )
+        with trace_span("judge_llm.provider.execute", attributes={
+            "judge_llm.provider_type": provider.get_provider_type(),
+            "judge_llm.agent_id": provider.agent_id,
+        }) as provider_span:
+            try:
+                provider_result = provider.execute(eval_case)
+            except Exception as e:
+                logger.error(f"Provider execution failed: {e}")
+                provider_result = ProviderResult(
+                    conversation_history=[],
+                    success=False,
+                    error=str(e),
+                )
 
-    # Run evaluators
-    evaluator_results = []
-    for evaluator in evaluators:
-        try:
-            # Extract per-test-case config for this specific evaluator
-            evaluator_specific_config = None
-            if hasattr(eval_case, 'evaluator_config') and eval_case.evaluator_config:
-                evaluator_name = evaluator.get_evaluator_name()
-                evaluator_specific_config = eval_case.evaluator_config.get(evaluator_name, None)
+            if provider_span:
+                set_span_attributes(provider_span, {
+                    "judge_llm.provider.success": provider_result.success,
+                    "judge_llm.provider.cost": provider_result.cost,
+                    "judge_llm.provider.token_usage.total": provider_result.token_usage.get("total_tokens", 0),
+                })
+                if provider_result.error:
+                    record_span_event(provider_span, "provider_error", {
+                        "error": provider_result.error,
+                    })
 
-            # Pass per-test-case evaluator config if available
-            eval_result = evaluator.evaluate(
-                eval_case=eval_case,
-                agent_metadata=provider.agent_metadata,
-                provider_result=provider_result,
-                eval_config=evaluator_specific_config
+        # Set time_taken at framework level if provider didn't set it
+        execution_time = time.time() - start_time
+        if provider_result.time_taken == 0:
+            provider_result = ProviderResult(
+                conversation_history=provider_result.conversation_history,
+                cost=provider_result.cost,
+                time_taken=execution_time,
+                token_usage=provider_result.token_usage,
+                metadata=provider_result.metadata,
+                success=provider_result.success,
+                error=provider_result.error,
             )
-            evaluator_results.append(eval_result)
-        except Exception as e:
-            logger.error(f"Evaluator {evaluator.get_evaluator_name()} failed: {e}")
 
-    # Determine overall success
-    overall_success = provider_result.success and all(e.passed for e in evaluator_results)
+        # Run evaluators
+        evaluator_results = []
+        for evaluator in evaluators:
+            with trace_span("judge_llm.evaluator.evaluate", attributes={
+                "judge_llm.evaluator.name": evaluator.get_evaluator_name(),
+            }) as eval_span:
+                try:
+                    evaluator_specific_config = None
+                    if hasattr(eval_case, 'evaluator_config') and eval_case.evaluator_config:
+                        evaluator_name = evaluator.get_evaluator_name()
+                        evaluator_specific_config = eval_case.evaluator_config.get(evaluator_name, None)
 
-    execution_run = ExecutionRun(
-        execution_id=execution_id,
-        run_number=run_number,
-        eval_set_id=eval_set.eval_set_id,
-        eval_case_id=eval_case.eval_id,
-        provider_type=provider.get_provider_type(),
-        provider_result=provider_result,
-        evaluator_results=evaluator_results,
-        overall_success=overall_success,
-        eval_case=eval_case,  # Include original eval case for expected responses
-    )
+                    eval_result = evaluator.evaluate(
+                        eval_case=eval_case,
+                        agent_metadata=provider.agent_metadata,
+                        provider_result=provider_result,
+                        eval_config=evaluator_specific_config
+                    )
+                    evaluator_results.append(eval_result)
 
-    logger.debug(f"Execution {execution_id} completed with status: {overall_success}")
+                    if eval_span:
+                        set_span_attributes(eval_span, {
+                            "judge_llm.evaluator.passed": eval_result.passed,
+                            "judge_llm.evaluator.score": eval_result.score if eval_result.score is not None else -1,
+                        })
+                except Exception as e:
+                    logger.error(f"Evaluator {evaluator.get_evaluator_name()} failed: {e}")
 
-    return execution_run
+        # Determine overall success
+        overall_success = provider_result.success and all(e.passed for e in evaluator_results)
+
+        if task_span:
+            set_span_attributes(task_span, {
+                "judge_llm.task.success": overall_success,
+            })
+
+        execution_run = ExecutionRun(
+            execution_id=execution_id,
+            run_number=run_number,
+            eval_set_id=eval_set.eval_set_id,
+            eval_case_id=eval_case.eval_id,
+            provider_type=provider.get_provider_type(),
+            provider_result=provider_result,
+            evaluator_results=evaluator_results,
+            overall_success=overall_success,
+            eval_case=eval_case,
+        )
+
+        logger.debug(f"Execution {execution_id} completed with status: {overall_success}")
+
+        return execution_run
 
 
 def _generate_report(execution_runs: List[ExecutionRun], wall_clock_time: float = None) -> EvaluationReport:

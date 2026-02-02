@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2026-02-01
+
+### Added
+- Optional OpenTelemetry (OTEL) instrumentation for deep observability into evaluation runs
+- New `judge_llm/utils/telemetry.py` module with no-op fallback when OTEL is not installed
+- Support for three telemetry exporters: Console, OTLP, and Arize Phoenix
+- `--telemetry` / `-t` CLI flag to enable tracing
+- `--telemetry-exporter` CLI option to select exporter (`console`, `otlp`, `phoenix`)
+- YAML config support via `agent.telemetry.enabled`, `agent.telemetry.exporter`, `agent.telemetry.endpoint`
+- Environment variable support: `JUDGE_LLM_TELEMETRY`, `OTEL_EXPORTER_TYPE`, `PHOENIX_COLLECTOR_ENDPOINT`
+- Span instrumentation across the full evaluation lifecycle:
+  - `judge_llm.evaluate` (root span with summary metrics)
+  - `judge_llm.execute_task` (per eval case/provider/run)
+  - `judge_llm.provider.execute` (provider calls with cost/token tracking)
+  - `judge_llm.evaluator.evaluate` (evaluator results with scores)
+  - `judge_llm.reporter.generate` (report generation)
+  - `judge_llm.adk_http.create_session` and `judge_llm.adk_http.send_and_collect` (HTTP-level detail with retry tracking)
+- New optional dependency groups in `pyproject.toml`: `telemetry` and `phoenix`
+- Comprehensive telemetry documentation: `docs/docs/guides/telemetry.md`
+
+### Changed
+- Updated `judge_llm/core/evaluate.py` with telemetry span instrumentation
+- Updated `judge_llm/providers/adk_http_provider.py` with HTTP-level span instrumentation
+- Updated `judge_llm/cli.py` with telemetry CLI options
+- Updated README.md with telemetry section, installation instructions, and feature listing
+- Updated CLI reference docs with telemetry flags and examples
+- Updated configuration guide with telemetry YAML config section
+- Updated environment variables guide with telemetry variables
+- Updated docs sidebar to include telemetry guide
+
 ## [1.0.3] - 2025-10-21
 
 ### Added
@@ -89,10 +119,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Release Links
 
-- [1.0.3] - Latest release with CLI fixes
+- [1.0.6] - Latest release with OpenTelemetry observability
+- [1.0.3] - CLI fixes
 - [1.0.0] - Initial release
 
 ## Upgrade Guide
+
+### From 1.0.3 to 1.0.6
+
+No breaking changes. Telemetry is disabled by default with zero overhead.
+
+```bash
+pip install --upgrade judge-llm
+
+# Optional: install telemetry support
+pip install judge-llm[telemetry]
+
+# Optional: install Arize Phoenix support
+pip install judge-llm[phoenix]
+```
 
 ### From 1.0.0 to 1.0.3
 
