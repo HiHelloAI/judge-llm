@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.9] - 2026-02-01
+
+### Added
+- Lifecycle callbacks on `ADKHTTPProvider` for extensibility via subclassing:
+  - `on_before_session_create` — modify payload, headers, or URL before session creation
+  - `on_after_session_create` — inspect or act on session creation result
+  - `on_before_run` — modify payload, headers, or message before sending to endpoint
+  - `on_after_run` — inspect, filter, or augment events returned from a run
+- Users can subclass `ADKHTTPProvider`, override only the callbacks they need, and register via config using the existing custom provider registration pattern
+
+### Changed
+- Updated README with lifecycle callbacks documentation and usage examples
+- Updated version badge in README to 1.0.9
+
 ## [1.0.7] - 2026-02-01
 
 ### Added
@@ -137,12 +151,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Release Links
 
-- [1.0.7] - Latest release with Phoenix sessions, I/O visibility, and OpenInference support
+- [1.0.9] - Latest release with ADK HTTP lifecycle callbacks for extensibility
+- [1.0.7] - Phoenix sessions, I/O visibility, and OpenInference support
 - [1.0.6] - OpenTelemetry observability
 - [1.0.3] - CLI fixes
 - [1.0.0] - Initial release
 
 ## Upgrade Guide
+
+### From 1.0.7 to 1.0.9
+
+No breaking changes. The four lifecycle callbacks (`on_before_session_create`, `on_after_session_create`, `on_before_run`, `on_after_run`) are no-ops by default. Existing code is unaffected.
+
+```bash
+pip install --upgrade judge-llm
+```
 
 ### From 1.0.6 to 1.0.7
 
