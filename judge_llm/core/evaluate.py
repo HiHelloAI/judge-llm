@@ -32,6 +32,7 @@ from judge_llm.utils.telemetry import (
     record_span_event,
     maybe_init_from_config,
     shutdown_telemetry,
+    set_openinference_attributes,
 )
 
 
@@ -291,6 +292,13 @@ def _evaluate_from_config(config: Dict[str, Any]) -> EvaluationReport:
         "judge_llm.num_runs": agent_config.get("num_runs", 1),
         "judge_llm.parallel": agent_config.get("parallel_execution", False),
     }) as root_span:
+        if root_span:
+            set_openinference_attributes(
+                root_span,
+                span_kind="CHAIN",
+                input_value=f"Evaluating {len(eval_sets)} eval set(s) with {len(providers)} provider(s)",
+            )
+
         execution_runs, wall_clock_time = _execute_evaluations(
             eval_sets=eval_sets,
             providers=providers,
@@ -613,12 +621,30 @@ def _execute_single_task(
         f"provider={provider.get_provider_type()}, run={run_number}"
     )
 
+    # Extract input text from conversation for telemetry
+    input_texts = []
+    for inv in eval_case.conversation:
+        for part in inv.user_content.parts:
+            if part.text:
+                input_texts.append(part.text)
+    input_summary = " | ".join(input_texts) if input_texts else ""
+
+    # Session ID for Phoenix session grouping
+    session_id = getattr(eval_case.session_input, 'session_id', None) or eval_case.eval_id
+
     with trace_span("judge_llm.execute_task", attributes={
         "judge_llm.eval_case_id": eval_case.eval_id,
         "judge_llm.eval_set_id": eval_set.eval_set_id,
         "judge_llm.provider_type": provider.get_provider_type(),
         "judge_llm.run_number": run_number,
     }) as task_span:
+        if task_span:
+            set_openinference_attributes(
+                task_span,
+                span_kind="CHAIN",
+                session_id=session_id,
+                input_value=input_summary,
+            )
 
         # Execute provider (track time at framework level)
         import time
@@ -628,6 +654,14 @@ def _execute_single_task(
             "judge_llm.provider_type": provider.get_provider_type(),
             "judge_llm.agent_id": provider.agent_id,
         }) as provider_span:
+            if provider_span:
+                set_openinference_attributes(
+                    provider_span,
+                    span_kind="LLM",
+                    session_id=session_id,
+                    input_value=input_summary,
+                    model_name=getattr(provider, 'model', provider.get_provider_type()),
+                )
             try:
                 provider_result = provider.execute(eval_case)
             except Exception as e:
@@ -644,6 +678,21 @@ def _execute_single_task(
                     "judge_llm.provider.cost": provider_result.cost,
                     "judge_llm.provider.token_usage.total": provider_result.token_usage.get("total_tokens", 0),
                 })
+                # Extract response text for Phoenix visibility
+                output_texts = []
+                for inv in provider_result.conversation_history:
+                    if inv.agent_content:
+                        for part in inv.agent_content.parts:
+                            if part.text:
+                                output_texts.append(part.text)
+                output_summary = " | ".join(output_texts) if output_texts else ""
+                set_openinference_attributes(
+                    provider_span,
+                    output_value=output_summary,
+                    token_count_prompt=provider_result.token_usage.get("prompt_tokens"),
+                    token_count_completion=provider_result.token_usage.get("completion_tokens"),
+                    token_count_total=provider_result.token_usage.get("total_tokens"),
+                )
                 if provider_result.error:
                     record_span_event(provider_span, "provider_error", {
                         "error": provider_result.error,
@@ -687,6 +736,14 @@ def _execute_single_task(
                             "judge_llm.evaluator.passed": eval_result.passed,
                             "judge_llm.evaluator.score": eval_result.score if eval_result.score is not None else -1,
                         })
+                        eval_output = f"passed={eval_result.passed}, score={eval_result.score}"
+                        if hasattr(eval_result, 'details') and eval_result.details:
+                            eval_output += f", details={eval_result.details}"
+                        set_openinference_attributes(
+                            eval_span,
+                            span_kind="EVALUATOR",
+                            output_value=eval_output,
+                        )
                 except Exception as e:
                     logger.error(f"Evaluator {evaluator.get_evaluator_name()} failed: {e}")
 
@@ -697,6 +754,17 @@ def _execute_single_task(
             set_span_attributes(task_span, {
                 "judge_llm.task.success": overall_success,
             })
+            # Set output on the task span for Phoenix
+            task_output_parts = []
+            for inv in provider_result.conversation_history:
+                if inv.agent_content:
+                    for part in inv.agent_content.parts:
+                        if part.text:
+                            task_output_parts.append(part.text)
+            set_openinference_attributes(
+                task_span,
+                output_value=" | ".join(task_output_parts) if task_output_parts else f"success={overall_success}",
+            )
 
         execution_run = ExecutionRun(
             execution_id=execution_id,

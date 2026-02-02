@@ -20,6 +20,7 @@ logger = logging.getLogger("judge_llm")
 _ENABLED = False
 _tracer = None
 _provider = None
+_OPENINFERENCE_AVAILABLE = False
 
 # Check if opentelemetry is available
 try:
@@ -35,6 +36,16 @@ try:
     _OTEL_AVAILABLE = True
 except ImportError:
     _OTEL_AVAILABLE = False
+
+# Check if OpenInference semantic conventions are available (for Phoenix)
+try:
+    from openinference.semconv.trace import (
+        SpanAttributes as OISpanAttributes,
+        OpenInferenceSpanKindValues,
+    )
+    _OPENINFERENCE_AVAILABLE = True
+except ImportError:
+    _OPENINFERENCE_AVAILABLE = False
 
 
 def is_telemetry_available() -> bool:
@@ -258,3 +269,57 @@ def maybe_init_from_config(agent_config: Dict[str, Any]):
     endpoint = telemetry_config.get("endpoint")
 
     init_telemetry(service_name=service_name, exporter=exporter, endpoint=endpoint)
+
+
+def set_openinference_attributes(
+    span,
+    *,
+    span_kind: Optional[str] = None,
+    input_value: Optional[str] = None,
+    output_value: Optional[str] = None,
+    session_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    model_name: Optional[str] = None,
+    token_count_prompt: Optional[int] = None,
+    token_count_completion: Optional[int] = None,
+    token_count_total: Optional[int] = None,
+    llm_input_messages: Optional[str] = None,
+    llm_output_messages: Optional[str] = None,
+    metadata: Optional[str] = None,
+):
+    """Set OpenInference semantic convention attributes on a span.
+
+    These attributes make spans visible as sessions, LLM calls, etc. in
+    Phoenix and other OpenInference-compatible tools.
+
+    No-op if openinference-semantic-conventions is not installed.
+    """
+    if span is None or not _ENABLED or not _OPENINFERENCE_AVAILABLE:
+        return
+
+    if span_kind is not None:
+        span.set_attribute(OISpanAttributes.OPENINFERENCE_SPAN_KIND, span_kind)
+    if input_value is not None:
+        span.set_attribute(OISpanAttributes.INPUT_VALUE, input_value)
+        span.set_attribute(OISpanAttributes.INPUT_MIME_TYPE, "text/plain")
+    if output_value is not None:
+        span.set_attribute(OISpanAttributes.OUTPUT_VALUE, output_value)
+        span.set_attribute(OISpanAttributes.OUTPUT_MIME_TYPE, "text/plain")
+    if session_id is not None:
+        span.set_attribute(OISpanAttributes.SESSION_ID, session_id)
+    if user_id is not None:
+        span.set_attribute(OISpanAttributes.USER_ID, user_id)
+    if model_name is not None:
+        span.set_attribute(OISpanAttributes.LLM_MODEL_NAME, model_name)
+    if token_count_prompt is not None:
+        span.set_attribute(OISpanAttributes.LLM_TOKEN_COUNT_PROMPT, token_count_prompt)
+    if token_count_completion is not None:
+        span.set_attribute(OISpanAttributes.LLM_TOKEN_COUNT_COMPLETION, token_count_completion)
+    if token_count_total is not None:
+        span.set_attribute(OISpanAttributes.LLM_TOKEN_COUNT_TOTAL, token_count_total)
+    if llm_input_messages is not None:
+        span.set_attribute(OISpanAttributes.LLM_INPUT_MESSAGES, llm_input_messages)
+    if llm_output_messages is not None:
+        span.set_attribute(OISpanAttributes.LLM_OUTPUT_MESSAGES, llm_output_messages)
+    if metadata is not None:
+        span.set_attribute(OISpanAttributes.METADATA, metadata)
