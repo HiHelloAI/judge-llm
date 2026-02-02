@@ -6,7 +6,7 @@
   A lightweight, extensible Python framework for **evaluating and comparing LLM providers**. Test your AI agents systematically with multi-turn conversations, cost tracking, and comprehensive reporting.
 
   [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
-  [![Version](https://img.shields.io/badge/version-1.0.11-green.svg)](https://github.com/HiHelloAI/judge-llm)
+  [![Version](https://img.shields.io/badge/version-1.0.19-green.svg)](https://github.com/HiHelloAI/judge-llm)
   [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
   [![PyPI](https://img.shields.io/pypi/v/judge-llm.svg)](https://pypi.org/project/judge-llm/)
   [![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-optional-blueviolet.svg)](https://opentelemetry.io/)
@@ -224,11 +224,20 @@ dataset:
     - ./data/eval1.json
     - ./data/eval2.yaml
 
-# Using directory loader with pattern
+# Using directory loader (recursively searches all subdirectories)
 dataset:
   loader: directory
   paths: [./data]
   pattern: "*.yaml"  # or "*.json" or "*.yml"
+# Example directory structure:
+# data/
+#   ├── basic/
+#   │   ├── greetings.json
+#   │   └── math.json
+#   ├── advanced/
+#   │   └── reasoning.json
+#   └── safety.json
+# All matching files are discovered and results are grouped by directory in reports
 ```
 
 **Google ADK Provider Configuration:**

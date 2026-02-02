@@ -91,11 +91,18 @@ class DatabaseReporter(BaseReporter):
                 output_tokens INTEGER DEFAULT 0,
                 total_tokens INTEGER DEFAULT 0,
                 metadata_json TEXT,
+                source_path TEXT,
                 FOREIGN KEY (report_id) REFERENCES reports(report_id),
                 FOREIGN KEY (eval_set_id) REFERENCES eval_sets(eval_set_id),
                 FOREIGN KEY (eval_case_id) REFERENCES eval_cases(eval_case_id)
             )
         """)
+
+        # Add source_path column to existing databases (migration)
+        try:
+            cursor.execute("ALTER TABLE execution_runs ADD COLUMN source_path TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
 
         # Create invocations table (conversation history)
         cursor.execute("""
@@ -173,6 +180,10 @@ class DatabaseReporter(BaseReporter):
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_invocations_type
             ON invocations(invocation_type)
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_execution_runs_source_path
+            ON execution_runs(source_path)
         """)
 
         self.connection.commit()
@@ -321,8 +332,8 @@ class DatabaseReporter(BaseReporter):
             INSERT INTO execution_runs (
                 execution_id, report_id, run_number, eval_set_id, eval_case_id,
                 provider_type, provider_model, overall_success, timestamp, cost, time_taken,
-                input_tokens, output_tokens, total_tokens, metadata_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                input_tokens, output_tokens, total_tokens, metadata_json, source_path
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             run.execution_id,
             report_id,
@@ -338,7 +349,8 @@ class DatabaseReporter(BaseReporter):
             input_tokens,
             output_tokens,
             total_tokens,
-            self._serialize_json(run.provider_result.metadata)
+            self._serialize_json(run.provider_result.metadata),
+            run.source_path
         ))
 
     def _insert_invocations(self, execution_id: str, conversation_history: list, invocation_type: str = 'actual'):

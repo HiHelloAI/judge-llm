@@ -92,6 +92,7 @@ class EvalSet(BaseModel):
     description: Optional[str] = None
     eval_cases: List[EvalCase]
     creation_timestamp: float
+    source_path: Optional[str] = None  # Relative path from dataset root directory
 
 
 # Execution Configuration Models
@@ -154,6 +155,7 @@ class ExecutionRun(BaseModel):
     overall_success: bool
     timestamp: datetime = Field(default_factory=datetime.now)
     eval_case: Optional["EvalCase"] = None  # Original eval case with expected responses
+    source_path: Optional[str] = None  # Relative path from dataset root directory
 
 
 class EvaluationReport(BaseModel):

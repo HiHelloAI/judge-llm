@@ -16,6 +16,7 @@ The **Console Reporter** displays evaluation results directly in your terminal u
 - Summary statistics (success rate, costs, latency)
 - Detailed test case breakdowns
 - Per-evaluator results with scores
+- Directory-based grouping when using the directory loader (results organized by source folder)
 
 ## Configuration
 
@@ -158,6 +159,26 @@ Real-time progress as tests execute:
   [3/10] test_003 ✓
   ...
 ```
+
+### Directory Grouping
+
+When using the directory loader, execution results are automatically grouped by source directory:
+
+```
+                    Execution Details — basic (2/2 passed)
+┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Exec ID   ┃ Eval Case  ┃ Source         ┃ Run ┃ Provide ┃ Status ┃ Time    ┃ Evaluators ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━┩
+│ a1b2c3d4  │ greetings  │ greetings.json │  1  │ gemini  │ ✓      │ 1.23   │ 2/2        │
+│ e5f6g7h8  │ math       │ math.json      │  1  │ gemini  │ ✓      │ 0.98   │ 2/2        │
+└───────────┴────────────┴────────────────┴─────┴─────────┴────────┴─────────┴────────────┘
+
+                  Execution Details — advanced (1/2 passed)
+┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┓
+...
+```
+
+Each source directory gets its own table with a title showing the directory name and pass/fail count.
 
 ### Summary Statistics
 

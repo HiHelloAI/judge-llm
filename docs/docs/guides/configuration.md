@@ -61,6 +61,34 @@ dataset:
 ]
 ```
 
+### Directory Loader
+
+Load test cases from all matching files in a directory and its subdirectories. Files are discovered recursively, and results are grouped by directory structure in reports.
+
+```yaml
+dataset:
+  loader: directory
+  paths:
+    - ./data/eval_sets
+  pattern: "*.json"  # default; also supports "*.yaml", "*.yml", or custom patterns like "eval*.json"
+```
+
+**Example directory structure:**
+
+```
+eval_sets/
+  ├── basic/
+  │   ├── greetings.json
+  │   └── math.json
+  ├── advanced/
+  │   ├── reasoning/
+  │   │   └── multi_step.json
+  │   └── coding.json
+  └── safety.json
+```
+
+All matching files are discovered recursively. Each loaded eval set tracks its `source_path` (relative to the root directory), which flows through to execution runs and reports. The console, HTML, database, and dashboard reporters all group results by directory structure.
+
 ### BrowserBase Loader
 
 Load test cases from BrowserBase sessions (for web-based testing).

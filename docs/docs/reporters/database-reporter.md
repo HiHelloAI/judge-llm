@@ -85,6 +85,7 @@ Stores individual test case results.
 | time_taken | REAL | Execution time (seconds) |
 | evaluation_results | TEXT | JSON blob with evaluator results |
 | conversation_history | TEXT | JSON blob with full conversation |
+| source_path | TEXT | Relative file path from dataset root directory (set by directory loader) |
 
 ## Querying the Database
 
@@ -128,6 +129,22 @@ SELECT
     ROUND(AVG(passed) * 100, 2) as success_rate
 FROM test_cases
 GROUP BY provider_type;
+```
+
+#### Results by Source Directory
+
+```sql
+SELECT
+    CASE
+        WHEN source_path LIKE '%/%' THEN SUBSTR(source_path, 1, INSTR(source_path, '/') - 1)
+        ELSE 'root'
+    END as directory,
+    COUNT(*) as total_tests,
+    SUM(passed) as passed_tests,
+    ROUND(AVG(passed) * 100, 2) as success_rate
+FROM test_cases
+WHERE source_path IS NOT NULL
+GROUP BY directory;
 ```
 
 #### Trend Analysis
@@ -203,7 +220,8 @@ To view the interactive dashboard:
 
 - **Overview Charts**: Success rate, cost trends, execution times
 - **Test Case Browser**: Drill down into individual test results
-- **Filtering**: By date, provider, agent, pass/fail status
+- **Directory Grouping**: Executions organized by source directory structure (when using directory loader)
+- **Filtering**: By date, provider, agent, source path, pass/fail status
 - **SQL Query Interface**: Run custom queries
 - **Export**: Download filtered results as CSV/JSON
 
