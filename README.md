@@ -11,7 +11,7 @@
   [![PyPI](https://img.shields.io/pypi/v/judge-llm.svg)](https://pypi.org/project/judge-llm/)
   [![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-optional-blueviolet.svg)](https://opentelemetry.io/)
 
-  [Quick Start](#quick-start) • [Features](#features) • [Examples](#testing-examples) • [Reports](#reports--dashboard)
+  [Documentation](https://hihelloai.github.io/judge-llm/docs/intro) • [Quick Start](#quick-start) • [Features](#features) • [Examples](#testing-examples) • [Reports](#reports--dashboard)
 </div>
 
 <div align="center">
