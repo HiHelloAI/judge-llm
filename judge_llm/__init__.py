@@ -19,7 +19,7 @@ import judge_llm.providers
 import judge_llm.evaluators
 import judge_llm.reporters
 
-__version__ = "1.0.9"
+__version__ = "1.0.11"
 __all__ = [
     "evaluate",
     "register_evaluator",

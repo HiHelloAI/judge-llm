@@ -429,6 +429,10 @@ def _initialize_providers(
         if not provider_type:
             raise ValueError("Provider type is required")
 
+        # Skip registration-only entries (no agent_id = not meant to be instantiated)
+        if "register_as" in provider_config and not provider_config.get("agent_id"):
+            continue
+
         provider_class = registry.get(provider_type)
         if not provider_class:
             raise ValueError(f"Unknown provider type: {provider_type}")
@@ -442,7 +446,7 @@ def _initialize_providers(
         provider_metadata = {
             k: v
             for k, v in provider_config.items()
-            if k not in ["type", "agent_id", "agent_config_path", "agent_metadata"]
+            if k not in ["type", "agent_id", "agent_config_path", "agent_metadata", "register_as", "module_path", "class_name"]
         }
 
         # Use provider-specific agent_metadata if provided, otherwise use global agent_metadata
@@ -681,8 +685,8 @@ def _execute_single_task(
                 # Extract response text for Phoenix visibility
                 output_texts = []
                 for inv in provider_result.conversation_history:
-                    if inv.agent_content:
-                        for part in inv.agent_content.parts:
+                    if inv.final_response:
+                        for part in inv.final_response.parts:
                             if part.text:
                                 output_texts.append(part.text)
                 output_summary = " | ".join(output_texts) if output_texts else ""
@@ -757,8 +761,8 @@ def _execute_single_task(
             # Set output on the task span for Phoenix
             task_output_parts = []
             for inv in provider_result.conversation_history:
-                if inv.agent_content:
-                    for part in inv.agent_content.parts:
+                if inv.final_response:
+                    for part in inv.final_response.parts:
                         if part.text:
                             task_output_parts.append(part.text)
             set_openinference_attributes(
@@ -963,7 +967,9 @@ def _process_provider_registrations(config: Dict[str, Any]):
     
     for provider_config in providers_config:
         # Check if this is a custom provider that should be registered
-        if provider_config.get("type") == "custom" and "register_as" in provider_config:
+        # Support both: type=custom with register_as, and merged configs where
+        # register_as + module_path + class_name survive from defaults even if type was overwritten
+        if "register_as" in provider_config and "module_path" in provider_config and "class_name" in provider_config:
             register_as = provider_config.get("register_as")
             module_path = provider_config.get("module_path")
             class_name = provider_config.get("class_name")

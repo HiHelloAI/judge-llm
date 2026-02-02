@@ -275,7 +275,7 @@ class ADKHTTPProvider(BaseProvider):
         before the session creation request is sent.
 
         Args:
-            context: Dict with keys: payload, headers, url, app_name, user_id, session_id
+            context: Dict with keys: payload, headers, url, app_name, user_id, session_id, initial_state
 
         Returns:
             The (possibly modified) context dict.
@@ -288,7 +288,7 @@ class ADKHTTPProvider(BaseProvider):
         Override in a subclass to inspect or act on the session creation result.
 
         Args:
-            context: Dict with keys: session_id, response, app_name, user_id
+            context: Dict with keys: session_id, response, app_name, user_id, initial_state
 
         Returns:
             The (possibly modified) context dict.
@@ -377,6 +377,7 @@ class ADKHTTPProvider(BaseProvider):
             "app_name": app_name,
             "user_id": user_id,
             "session_id": session_id,
+            "initial_state": initial_state,
         })
         payload = ctx["payload"]
         headers = ctx["headers"]
@@ -419,6 +420,7 @@ class ADKHTTPProvider(BaseProvider):
                     "response": response,
                     "app_name": app_name,
                     "user_id": user_id,
+                    "initial_state": initial_state,
                 })
 
                 return session_id
