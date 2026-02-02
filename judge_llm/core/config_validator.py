@@ -204,6 +204,10 @@ class ConfigValidator:
                     fix_suggestion="Add 'type: gemini' or another supported provider type"
                 ))
 
+            # Skip validation for registration-only entries (no agent_id = not instantiated)
+            if "register_as" in provider and not provider.get("agent_id"):
+                continue
+
             # Validate agent_id
             agent_id = provider.get("agent_id")
             if not agent_id:

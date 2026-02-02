@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.14] - 2026-02-02
+
+### Fixed
+- Fixed `AttributeError: 'Invocation' object has no attribute 'agent_content'` in telemetry spans — changed to correct attribute `final_response`
+
+## [1.0.11] - 2026-02-02
+
+### Fixed
+- Custom provider registration via `register_as` now works correctly in a single config file — registration-only entries (`type: custom` with `register_as`) are skipped during provider initialization, preventing "Unknown provider type: custom" errors
+- `initial_state` is now passed explicitly in lifecycle callback context for both `on_before_session_create` and `on_after_session_create`
+
 ## [1.0.9] - 2026-02-01
 
 ### Added
@@ -151,13 +162,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Release Links
 
-- [1.0.9] - Latest release with ADK HTTP lifecycle callbacks for extensibility
+- [1.0.14] - Latest release with telemetry attribute fix
+- [1.0.11] - Custom provider registration fix
+- [1.0.9] - ADK HTTP lifecycle callbacks for extensibility
 - [1.0.7] - Phoenix sessions, I/O visibility, and OpenInference support
 - [1.0.6] - OpenTelemetry observability
 - [1.0.3] - CLI fixes
 - [1.0.0] - Initial release
 
 ## Upgrade Guide
+
+### From 1.0.9 to 1.0.11
+
+No breaking changes. Fixes custom provider registration when `register_as` and usage are in the same config file.
+
+```bash
+pip install --upgrade judge-llm
+```
 
 ### From 1.0.7 to 1.0.9
 
