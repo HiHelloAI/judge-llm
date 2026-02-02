@@ -266,6 +266,63 @@ class ADKHTTPProvider(BaseProvider):
         # Cleanup inactive sessions
         self._session_manager.cleanup_inactive()
 
+    # -- Lifecycle callbacks (override in subclass) --
+
+    def on_before_session_create(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Called before creating a session on the ADK server.
+
+        Override in a subclass to modify the payload, headers, or other context
+        before the session creation request is sent.
+
+        Args:
+            context: Dict with keys: payload, headers, url, app_name, user_id, session_id
+
+        Returns:
+            The (possibly modified) context dict.
+        """
+        return context
+
+    def on_after_session_create(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Called after a session is successfully created on the ADK server.
+
+        Override in a subclass to inspect or act on the session creation result.
+
+        Args:
+            context: Dict with keys: session_id, response, app_name, user_id
+
+        Returns:
+            The (possibly modified) context dict.
+        """
+        return context
+
+    def on_before_run(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Called before sending a message to the ADK endpoint.
+
+        Override in a subclass to modify the payload, headers, or message
+        before the request is sent.
+
+        Args:
+            context: Dict with keys: payload, headers, message, session_id, system_instruction
+
+        Returns:
+            The (possibly modified) context dict.
+        """
+        return context
+
+    def on_after_run(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Called after collecting events from the ADK endpoint.
+
+        Override in a subclass to inspect, filter, or augment the events
+        returned from a run.
+
+        Args:
+            context: Dict with keys: events, session_id, response
+
+        Returns:
+            The (possibly modified) context dict.
+        """
+        return context
+
     def _extract_user_message(self, invocation: Invocation) -> str:
         """Extract user message text from invocation.
 
@@ -312,6 +369,19 @@ class ADKHTTPProvider(BaseProvider):
         if initial_state:
             payload["state"] = initial_state
 
+        # Lifecycle callback: before session create
+        ctx = self.on_before_session_create({
+            "payload": payload,
+            "headers": headers,
+            "url": url,
+            "app_name": app_name,
+            "user_id": user_id,
+            "session_id": session_id,
+        })
+        payload = ctx["payload"]
+        headers = ctx["headers"]
+        url = ctx["url"]
+
         with trace_span("judge_llm.adk_http.create_session", attributes={
             "judge_llm.adk_http.endpoint": self.base_url,
             "judge_llm.adk_http.app_name": app_name,
@@ -342,6 +412,15 @@ class ADKHTTPProvider(BaseProvider):
                         session_id=session_id,
                         user_id=user_id,
                     )
+
+                # Lifecycle callback: after session create
+                self.on_after_session_create({
+                    "session_id": session_id,
+                    "response": response,
+                    "app_name": app_name,
+                    "user_id": user_id,
+                })
+
                 return session_id
 
     def _build_auth_headers(self) -> Dict[str, str]:
@@ -417,6 +496,17 @@ class ADKHTTPProvider(BaseProvider):
             "Accept": "application/json, text/event-stream",
         }
         headers.update(self._build_auth_headers())
+
+        # Lifecycle callback: before run
+        ctx = self.on_before_run({
+            "payload": payload,
+            "headers": headers,
+            "message": message,
+            "session_id": session_id,
+            "system_instruction": system_instruction,
+        })
+        payload = ctx["payload"]
+        headers = ctx["headers"]
 
         events: List[ADKEvent] = []
         last_error: Optional[Exception] = None
@@ -521,6 +611,15 @@ class ADKHTTPProvider(BaseProvider):
                                 token_count_completion=self._event_mapper.aggregate_token_usage(events).get("completion_tokens"),
                                 token_count_total=self._event_mapper.aggregate_token_usage(events).get("total_tokens"),
                             )
+
+                        # Lifecycle callback: after run
+                        after_ctx = self.on_after_run({
+                            "events": events,
+                            "session_id": session_id,
+                            "response": response,
+                        })
+                        events = after_ctx["events"]
+
                         return events
 
                 except httpx.HTTPStatusError as e:

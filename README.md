@@ -6,7 +6,7 @@
   A lightweight, extensible Python framework for **evaluating and comparing LLM providers**. Test your AI agents systematically with multi-turn conversations, cost tracking, and comprehensive reporting.
 
   [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
-  [![Version](https://img.shields.io/badge/version-1.0.7-green.svg)](https://github.com/HiHelloAI/judge-llm)
+  [![Version](https://img.shields.io/badge/version-1.0.9-green.svg)](https://github.com/HiHelloAI/judge-llm)
   [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
   [![PyPI](https://img.shields.io/pypi/v/judge-llm.svg)](https://pypi.org/project/judge-llm/)
   [![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-optional-blueviolet.svg)](https://opentelemetry.io/)
@@ -274,6 +274,38 @@ evaluators:
   - type: llm_judge_evaluator  # LLM-as-judge quality assessment
     config:
       evaluation_type: comprehensive
+```
+
+**Lifecycle Callbacks (Extensibility):**
+
+The ADK HTTP provider exposes lifecycle callbacks that you can override by subclassing:
+
+| Callback | When | Context keys |
+|----------|------|-------------|
+| `on_before_session_create` | Before session creation request | `payload, headers, url, app_name, user_id, session_id` |
+| `on_after_session_create` | After session created | `session_id, response, app_name, user_id` |
+| `on_before_run` | Before sending message | `payload, headers, message, session_id, system_instruction` |
+| `on_after_run` | After collecting events | `events, session_id, response` |
+
+```python
+# my_provider.py
+from judge_llm.providers.adk_http_provider import ADKHTTPProvider
+
+class MyADKHTTPProvider(ADKHTTPProvider):
+    def on_before_run(self, context):
+        context["headers"]["X-Trace-Id"] = "my-trace"
+        return context
+```
+
+```yaml
+# Register and use via config
+providers:
+  - type: custom
+    module_path: ./my_provider.py
+    class_name: MyADKHTTPProvider
+    register_as: my_adk_http
+    agent_id: my_agent
+    endpoint_url: http://localhost:8000/run_sse
 ```
 
 See [examples/10-adk-http-agent/](examples/10-adk-http-agent/) for a complete working example.
