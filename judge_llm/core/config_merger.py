@@ -168,20 +168,41 @@ class ConfigMerger:
                 return result
 
         # Merge by type (default behavior)
-        # Use composite key (type + name/class_name) to handle multiple custom evaluators
+        # Use composite key (type + name/class_name) to handle multiple custom evaluators.
+        # Also track register_as aliases so that a default with
+        #   type: custom, register_as: foo
+        # is recognized as the same evaluator as an override with type: foo.
         merged = []
-        default_by_type = {
-            self._evaluator_key(eval): eval for eval in defaults if eval.get("type")
-        }
-        override_by_type = {
-            self._evaluator_key(eval): eval for eval in overrides if eval.get("type")
-        }
+        default_by_key = {}
+        # Map from register_as alias -> canonical key for cross-referencing
+        alias_to_key = {}
+
+        for eval_cfg in defaults:
+            if not eval_cfg.get("type"):
+                continue
+            key = self._evaluator_key(eval_cfg)
+            default_by_key[key] = eval_cfg
+            # If this custom evaluator registers an alias, record it
+            register_as = eval_cfg.get("register_as")
+            if register_as:
+                alias_to_key[register_as] = key
+
+        override_by_key = {}
+        for eval_cfg in overrides:
+            if not eval_cfg.get("type"):
+                continue
+            key = self._evaluator_key(eval_cfg)
+            # Check if this override's type matches a register_as alias from defaults
+            eval_type = eval_cfg.get("type", "")
+            if eval_type in alias_to_key:
+                key = alias_to_key[eval_type]
+            override_by_key[key] = eval_cfg
 
         # Start with defaults
-        for eval_type, default_eval in default_by_type.items():
-            if eval_type in override_by_type:
+        for eval_key, default_eval in default_by_key.items():
+            if eval_key in override_by_key:
                 # Merge with override
-                override_eval = override_by_type[eval_type]
+                override_eval = override_by_key[eval_key]
 
                 # If override sets enabled: false, skip this evaluator
                 if not override_eval.get("enabled", True):
@@ -193,8 +214,8 @@ class ConfigMerger:
                 merged.append(default_eval.copy())
 
         # Add new evaluators from overrides
-        for eval_type, override_eval in override_by_type.items():
-            if eval_type not in default_by_type:
+        for eval_key, override_eval in override_by_key.items():
+            if eval_key not in default_by_key:
                 merged.append(override_eval.copy())
 
         return merged
