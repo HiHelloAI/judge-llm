@@ -5,10 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.21] - 2026-02-02
+## [1.0.22] - 2026-02-02
 
 ### Fixed
-- Custom evaluator deduplication: evaluators with `type: "custom"` in both defaults and config no longer produce duplicates in the report — merge key now uses composite of type + name/class_name/module_path
+- Custom evaluator deduplication: evaluators defined with `type: custom` + `register_as` in defaults are now correctly matched when referenced by their registered name (`type: <register_as>`) in config — prevents duplicate evaluators in the report
 - HTML report: evaluator "View Details" now works as an accordion — expanding one detail row collapses the previously open one
 
 ## [1.0.20] - 2026-02-02
@@ -213,7 +213,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Release Links
 
-- [1.0.21] - Custom evaluator dedup fix, HTML report accordion evaluator details
+- [1.0.22] - Custom evaluator register_as dedup fix, HTML report accordion evaluator details
 - [1.0.19] - Recursive directory loading, source path tracking, directory-based report grouping
 - [1.0.17] - Per-invocation comparison in evaluator View Details
 - [1.0.16] - Enhanced HTML report comparison views
